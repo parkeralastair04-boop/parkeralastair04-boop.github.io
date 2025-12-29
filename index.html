@@ -5,502 +5,307 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TactiGrid Drill Designer</title>
 
-  <!-- Fabric.js (canvas objects, resize/rotate, free draw) -->
+  <!-- Fabric + jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
-
-  <!-- jsPDF (PDF export) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
     :root{
-      --bg: #0b0b0e;
-      --panel: #111116;
-      --panel2:#15151c;
-      --line: #262630;
-      --text: #f5f5f7;
-      --muted:#b8b8c2;
-      --accent:#ffd400;
-      --accent2:#ffea61;
-      --danger:#ff4d4d;
+      --bg:#0b0c0f;
+      --panel:#101218;
+      --panel2:#0f1116;
+      --border:#232635;
+      --text:#e8e8ea;
+      --muted:#a8a8ad;
+      --yellow:#f5c400;
+      --yellow2:#ffd84d;
+      --btn:#161a22;
+      --btn2:#1b2030;
+      --danger:#a53b3b;
     }
-
-    *{ box-sizing:border-box; }
+    *{box-sizing:border-box}
     body{
       margin:0;
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background: radial-gradient(1200px 800px at 20% 0%, #15151f 0%, var(--bg) 55%) fixed;
-      color: var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      color:var(--text);
+      background: radial-gradient(900px 500px at 20% -10%, #1a1c26 0%, transparent 60%),
+                  radial-gradient(800px 500px at 80% -20%, #1b1a10 0%, transparent 60%),
+                  var(--bg);
     }
-
-    header{
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, #0f0f14 0%, #0b0b0e 100%);
-      position: sticky;
-      top:0;
-      z-index:10;
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      background: linear-gradient(180deg, rgba(16,18,24,.96), rgba(10,12,15,.92));
+      border-bottom:1px solid var(--border);
+      backdrop-filter: blur(10px);
     }
-
+    .wrap{max-width:1200px;margin:0 auto;padding:12px 14px;}
     .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
+      display:flex; align-items:center; gap:10px; margin-bottom:10px;
     }
-    .logo{
-      width:34px;height:34px;border-radius:10px;
-      background: linear-gradient(135deg, var(--accent) 0%, #b99600 100%);
-      display:grid;place-items:center;
-      color:#0b0b0e;
-      font-weight: 900;
-      box-shadow: 0 10px 26px rgba(255,212,0,.18);
-      user-select:none;
-    }
-    .titlewrap{ display:flex; flex-direction:column; line-height:1.1; }
-    .title{
-      margin:0;
-      font-size: 16px;
+    .logo-pill{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid rgba(245,196,0,.35);
+      background: rgba(245,196,0,.08);
+      padding:6px 10px;
+      border-radius:10px;
+      font-weight:700;
+      color:var(--yellow2);
       letter-spacing:.2px;
-      font-weight: 800;
     }
-    .subtitle{
-      margin:0;
-      font-size: 12px;
-      color: var(--muted);
+    .logo-dot{
+      width:10px;height:10px;border-radius:50%;
+      background: var(--yellow);
+      box-shadow:0 0 0 3px rgba(245,196,0,.15);
     }
-
-    .container{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-      padding: 12px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .panel{
-      background: rgba(17,17,22,.85);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      box-shadow: 0 10px 40px rgba(0,0,0,.35);
-      overflow:hidden;
-    }
-
+    .subtitle{color:var(--muted); font-size:13px}
     .toolbar{
       display:flex;
-      gap:10px;
-      padding: 12px;
-      flex-wrap: wrap;
-      align-items:center;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(21,21,28,.9) 0%, rgba(17,17,22,.85) 100%);
-    }
-
-    .group{
-      display:flex;
-      gap:8px;
-      align-items:center;
       flex-wrap:wrap;
-      padding: 6px 8px;
-      border: 1px solid rgba(255,255,255,.06);
-      border-radius: 12px;
-      background: rgba(255,255,255,.03);
+      gap:10px;
+      align-items:center;
+      padding-bottom:6px;
     }
-
-    .label{
+    .group{
+      display:flex; flex-wrap:wrap;
+      gap:10px;
+      padding:10px;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(16,18,24,.8), rgba(15,17,22,.8));
+      border-radius:14px;
+    }
+    .field{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    label{
       font-size:12px;
-      color: var(--muted);
-      margin-right: 2px;
+      color:var(--muted);
+      margin-right:6px;
     }
-
-    button, select, input[type="color"]{
-      appearance:none;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.04);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 9px 10px;
-      font-weight: 650;
-      letter-spacing:.1px;
+    select, button, input[type="color"]{
+      height:36px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, var(--btn), var(--btn2));
+      color:var(--text);
+      padding:0 12px;
+      outline:none;
+      font-weight:600;
+    }
+    select{padding-right:34px}
+    button{
       cursor:pointer;
-      transition: transform .04s ease, background .15s ease, border-color .15s ease;
-      font-size: 13px;
-    }
-    button:hover, select:hover{
-      border-color: rgba(255,212,0,.55);
-      background: rgba(255,212,0,.08);
-    }
-    button:active{ transform: translateY(1px); }
-    button.primary{
-      background: rgba(255,212,0,.14);
-      border-color: rgba(255,212,0,.65);
-      color: var(--accent2);
-    }
-    button.danger{
-      border-color: rgba(255,77,77,.6);
-      background: rgba(255,77,77,.08);
-    }
-    button.active{
-      outline: 2px solid rgba(255,212,0,.45);
-      border-color: rgba(255,212,0,.8);
-      background: rgba(255,212,0,.12);
-    }
-
-    select{
-      padding-right: 28px;
-      background-image:
-        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
-        linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-      background-position:
-        calc(100% - 16px) 55%,
-        calc(100% - 11px) 55%;
-      background-size: 5px 5px, 5px 5px;
-      background-repeat:no-repeat;
-    }
-
-    .pill{
       display:inline-flex;
       align-items:center;
       gap:8px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
+      user-select:none;
+    }
+    button:hover{border-color: rgba(245,196,0,.35)}
+    button.primary{
+      border-color: rgba(245,196,0,.35);
+      background: linear-gradient(180deg, rgba(245,196,0,.18), rgba(245,196,0,.08));
+      color: var(--yellow2);
+    }
+    button.danger{
+      border-color: rgba(165,59,59,.45);
+      background: linear-gradient(180deg, rgba(165,59,59,.25), rgba(165,59,59,.12));
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:0 12px; height:36px;
+      border-radius:12px;
+      border:1px solid var(--border);
       background: rgba(255,255,255,.03);
+      color:var(--muted);
       font-size:12px;
-      color: var(--muted);
+      white-space:nowrap;
     }
-
-    .canvasWrap{
-      padding: 10px;
+    .canvas-shell{
+      margin:14px auto 10px auto;
+      max-width:1200px;
+      padding:0 14px 14px 14px;
     }
-
-    canvas{
+    .canvas-card{
+      border:1px solid var(--border);
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(16,18,24,.72), rgba(11,12,15,.72));
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .canvas-topline{
+      display:flex; justify-content:space-between; align-items:center;
+      padding:10px 12px;
+      border-bottom:1px solid rgba(35,38,53,.7);
+      background: rgba(0,0,0,.18);
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .hint{color:var(--muted); font-size:12px}
+    .stage{
       width:100%;
-      height:auto;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: #0a0a0d;
-      touch-action: none; /* mobile */
+      background:#0a0b0e;
+      display:flex;
+      justify-content:center;
+      padding:12px;
     }
-
-    .notes{
-      padding: 12px;
-      border-top: 1px solid var(--line);
-      background: rgba(15,15,20,.55);
+    canvas{max-width:100%; height:auto; border-radius:14px}
+    .notes-wrap{
+      max-width:1200px;
+      margin:0 auto;
+      padding:0 14px 22px 14px;
     }
-    .notes h3{
-      margin:0 0 8px 0;
-      font-size: 13px;
-      letter-spacing:.2px;
-      color: var(--accent2);
+    .notes-card{
+      border:1px solid var(--border);
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(16,18,24,.72), rgba(11,12,15,.72));
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
     }
+    .notes-title{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
+    .notes-title h3{margin:0; font-size:16px; color:var(--yellow2); letter-spacing:.2px}
     textarea{
       width:100%;
-      min-height: 120px;
-      resize: vertical;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.03);
-      color: var(--text);
-      padding: 10px 12px;
-      font-size: 13px;
-      line-height: 1.35;
+      min-height:120px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.25);
+      color:var(--text);
+      padding:12px;
+      resize:vertical;
       outline:none;
+      font-size:14px;
+      line-height:1.35;
     }
-    textarea:focus{
-      border-color: rgba(255,212,0,.55);
-      box-shadow: 0 0 0 3px rgba(255,212,0,.12);
-    }
-
-    .exportRow{
+    .export-row{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
       align-items:center;
-      justify-content:flex-start;
-      margin-top: 10px;
+      justify-content:flex-end;
     }
-
-    .smallhint{
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 8px;
-      line-height:1.35;
+    .icon{
+      width:16px;height:16px; display:inline-block;
     }
-
-    /* Mobile friendliness */
-    @media (max-width: 720px){
-      .toolbar{ gap:8px; padding:10px; }
-      button, select{ padding: 10px 10px; font-size: 13px; }
-      .group{ width: 100%; justify-content:flex-start; }
-      header{ position: static; }
+    @media (max-width:560px){
+      .export-row{justify-content:stretch}
+      .export-row button{flex:1}
+      select, button{width:100%}
+      .field{width:100%}
+      .group{width:100%}
     }
   </style>
 </head>
 
 <body>
-<header>
-  <div class="brand">
-    <div class="logo">TG</div>
-    <div class="titlewrap">
-      <h1 class="title">TactiGrid Drill Designer</h1>
-      <p class="subtitle">Build drills fast: add equipment, draw lines, export to PNG/PDF</p>
-    </div>
-  </div>
-</header>
-
-<div class="container">
-  <div class="panel">
-    <div class="toolbar">
-
-      <div class="group">
-        <span class="label">Pitch</span>
-        <select id="pitchType">
-          <option value="full">Full pitch</option>
-          <option value="half">Half pitch</option>
-          <option value="blank">Blank</option>
-        </select>
+  <div class="topbar">
+    <div class="wrap">
+      <div class="brand">
+        <div class="logo-pill"><span class="logo-dot"></span> TactiGrid</div>
+        <div>
+          <div style="font-weight:800; font-size:16px; margin-bottom:2px;">TactiGrid Drill Designer</div>
+          <div class="subtitle">Add equipment, draw lines, edit/transform, export to PNG/PDF.</div>
+        </div>
       </div>
 
-      <div class="group">
-        <span class="label">Mode</span>
-        <button id="editBtn" class="primary" title="Edit / Select (pencil)">✏️ Edit</button>
+      <div class="toolbar">
+        <div class="group">
+          <div class="field">
+            <label for="pitchSelect">Pitch</label>
+            <select id="pitchSelect">
+              <option value="full">Full pitch</option>
+              <option value="half">Half pitch</option>
+              <option value="blank">Blank</option>
+            </select>
+          </div>
 
-        <span class="pill" title="Add objects dropdown then tap/click on the pitch to place">
-          ➕ Add Objects:
-          <select id="addObjectSelect">
-            <option value="">Select…</option>
-            <option value="player">Player</option>
-            <option value="ball">Ball</option>
-            <option value="cone">Cone</option>
-            <option value="goal">Goal</option>
-            <option value="mannequin">Mannequin</option>
-            <option value="pole">Pole</option>
-            <option value="flag">Flag</option>
-            <option value="text">Text</option>
-          </select>
-        </span>
-      </div>
+          <div class="field">
+            <label>Mode</label>
+            <button id="editBtn" class="primary" title="Edit/Select">
+              ✏️ <span>Edit</span>
+            </button>
+          </div>
 
-      <div class="group">
-        <span class="label">Lines</span>
-        <button id="lineStraightBtn" title="Straight line">／</button>
-        <button id="lineArrowBtn" title="Arrow line">➡️</button>
-        <button id="lineDashedBtn" title="Dashed line">- -</button>
-        <button id="lineCurvedBtn" title="Curved line">〰️</button>
-        <button id="freeDrawBtn" title="Free draw">✍️</button>
-        <input id="colorPicker" type="color" value="#ffd400" title="Line/shape color" />
-      </div>
+          <div class="field">
+            <label for="objectSelect">Add Objects</label>
+            <select id="objectSelect">
+              <option value="player">Player</option>
+              <option value="ball">Ball</option>
+              <option value="cone">Cone</option>
+              <option value="goal">Goal</option>
+              <option value="mannequin">Mannequin</option>
+              <option value="pole">Pole</option>
+              <option value="flag">Flag</option>
+              <option value="text">Text</option>
+            </select>
+          </div>
 
-      <div class="group">
-        <span class="label">Actions</span>
-        <button id="undoBtn" title="Undo (Ctrl/Cmd+Z)">↶ Undo</button>
-        <button id="redoBtn" title="Redo (Ctrl/Cmd+Y)">↷ Redo</button>
-        <button id="clearBtn" class="danger" title="Clear canvas">🗑 Clear</button>
-      </div>
+          <div class="field">
+            <label for="lineSelect">Lines</label>
+            <select id="lineSelect">
+              <option value="straight">Straight</option>
+              <option value="arrow">Arrow</option>
+              <option value="dashed">Dashed</option>
+              <option value="curved">Curved</option>
+              <option value="free">Free draw</option>
+            </select>
+          </div>
 
-      <div class="group">
-        <span class="label">Tip</span>
-        <span class="pill">Double-click text to edit • Pinch/zoom via browser • Drag corners to resize</span>
-      </div>
-    </div>
+          <div class="field">
+            <label for="colorPicker">Colour</label>
+            <input id="colorPicker" type="color" value="#ffd84d" />
+          </div>
+        </div>
 
-    <div class="canvasWrap">
-      <canvas id="c" width="1400" height="820"></canvas>
-    </div>
-
-    <div class="notes">
-      <h3>Notes</h3>
-      <textarea id="notes" placeholder="Session notes… (these will be included in PDF export)"></textarea>
-
-      <div class="exportRow">
-        <button id="exportPngBtn" class="primary" title="Export PNG">🖼 Export PNG</button>
-        <button id="exportPdfBtn" class="primary" title="Export PDF (includes notes + branding)">📄 Export PDF</button>
-      </div>
-
-      <div class="smallhint">
-        Export PNG includes the pitch + all objects/lines in color. Export PDF adds TactiGrid branding plus your notes.
+        <div class="group">
+          <div class="field">
+            <label>Actions</label>
+            <button id="undoBtn">↶ Undo</button>
+            <button id="redoBtn">↷ Redo</button>
+            <button id="clearBtn" class="danger">🗑 Clear</button>
+          </div>
+          <div class="pill">Tip: drag to move • use corners to resize • rotation handle to rotate • double-click text to edit</div>
+        </div>
       </div>
     </div>
   </div>
-</div>
+
+  <div class="canvas-shell">
+    <div class="canvas-card">
+      <div class="canvas-topline">
+        <div class="hint">Canvas</div>
+        <div class="hint" id="modeHint">Mode: Edit (select & transform)</div>
+      </div>
+      <div class="stage">
+        <canvas id="c" width="1100" height="650"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes-wrap">
+    <div class="notes-card">
+      <div class="notes-title">
+        <h3>Notes</h3>
+        <div class="export-row">
+          <button id="exportPngBtn" title="Export PNG">
+            <span class="icon">🖼️</span> Export PNG
+          </button>
+          <button id="exportPdfBtn" title="Export PDF">
+            <span class="icon">📄</span> Export PDF
+          </button>
+        </div>
+      </div>
+      <textarea id="notes" placeholder="Write session notes here… (these will export with the PDF)"></textarea>
+    </div>
+  </div>
 
 <script>
-  // -----------------------
-  // SVG Pitch backgrounds
-  // -----------------------
-  const pitchSVG_full = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820">
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0c6a3c"/>
-        <stop offset="1" stop-color="#09502d"/>
-      </linearGradient>
-      <pattern id="stripes" width="200" height="820" patternUnits="userSpaceOnUse">
-        <rect width="200" height="820" fill="rgba(255,255,255,0.04)"/>
-        <rect x="100" width="100" height="820" fill="rgba(0,0,0,0.06)"/>
-      </pattern>
-    </defs>
-    <rect width="1400" height="820" fill="url(#g)"/>
-    <rect width="1400" height="820" fill="url(#stripes)"/>
-    <rect x="60" y="60" width="1280" height="700" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <line x1="700" y1="60" x2="700" y2="760" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <circle cx="700" cy="410" r="90" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <circle cx="700" cy="410" r="3" fill="rgba(255,255,255,0.8)"/>
-    <circle cx="220" cy="410" r="3" fill="rgba(255,255,255,0.8)"/>
-    <circle cx="1180" cy="410" r="3" fill="rgba(255,255,255,0.8)"/>
-    <rect x="60" y="250" width="170" height="320" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <rect x="60" y="320" width="60" height="180" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <rect x="1170" y="250" width="170" height="320" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <rect x="1280" y="320" width="60" height="180" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <path d="M 230 320 A 90 90 0 0 1 230 500" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <path d="M 1170 320 A 90 90 0 0 0 1170 500" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <path d="M 60 150 A 60 60 0 0 1 120 60" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <path d="M 1340 60 A 60 60 0 0 1 1340 120" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <path d="M 1340 760 A 60 60 0 0 1 1280 760" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <path d="M 60 760 A 60 60 0 0 1 60 700" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-  </svg>`;
-
-  // Half pitch (attacking half) – FIXED
-  const pitchSVG_half = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820">
-    <defs>
-      <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0c6a3c"/>
-        <stop offset="1" stop-color="#09502d"/>
-      </linearGradient>
-      <pattern id="stripes2" width="200" height="820" patternUnits="userSpaceOnUse">
-        <rect width="200" height="820" fill="rgba(255,255,255,0.04)"/>
-        <rect x="100" width="100" height="820" fill="rgba(0,0,0,0.06)"/>
-      </pattern>
-    </defs>
-    <rect width="1400" height="820" fill="url(#g2)"/>
-    <rect width="1400" height="820" fill="url(#stripes2)"/>
-
-    <!-- Half pitch boundary -->
-    <rect x="60" y="60" width="1280" height="700" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <!-- Midline -->
-    <line x1="700" y1="60" x2="700" y2="760" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-
-    <!-- Use RIGHT HALF (attacking half) markings -->
-    <circle cx="700" cy="410" r="90" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <circle cx="700" cy="410" r="3" fill="rgba(255,255,255,0.8)"/>
-    <circle cx="1180" cy="410" r="3" fill="rgba(255,255,255,0.8)"/>
-
-    <rect x="1170" y="250" width="170" height="320" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <rect x="1280" y="320" width="60" height="180" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <path d="M 1170 320 A 90 90 0 0 0 1170 500" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-
-    <path d="M 1340 60 A 60 60 0 0 1 1340 120" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-    <path d="M 1340 760 A 60 60 0 0 1 1280 760" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
-  </svg>`;
-
-  const pitchSVG_blank = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820">
-    <rect width="1400" height="820" fill="#0a0a0d"/>
-  </svg>`;
-
-  function svgToDataUrl(svg){
-    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.trim());
-  }
-
-  // -----------------------
-  // Icon SVGs (good-looking)
-  // -----------------------
-  const ICONS = {
-    player: `
-      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
-        <defs>
-          <radialGradient id="pg" cx="35%" cy="30%" r="70%">
-            <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
-            <stop offset="1" stop-color="#000000" stop-opacity="0.25"/>
-          </radialGradient>
-        </defs>
-        <circle cx="45" cy="45" r="28" fill="currentColor"/>
-        <circle cx="45" cy="45" r="28" fill="url(#pg)"/>
-        <circle cx="45" cy="45" r="3" fill="rgba(255,255,255,0.75)"/>
-      </svg>`,
-
-    // Football-looking icon
-    ball: `
-      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
-        <circle cx="45" cy="45" r="26" fill="#f4f4f6" stroke="rgba(0,0,0,0.45)" stroke-width="3"/>
-        <polygon points="45,28 55,35 51,47 39,47 35,35" fill="#111116"/>
-        <path d="M35 35 L26 39 L28 50 L39 47" fill="#111116"/>
-        <path d="M55 35 L64 39 L62 50 L51 47" fill="#111116"/>
-        <path d="M28 50 L36 60 L45 57 L39 47" fill="#111116"/>
-        <path d="M62 50 L54 60 L45 57 L51 47" fill="#111116"/>
-        <circle cx="45" cy="45" r="26" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
-      </svg>`,
-
-    cone: `
-      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
-        <path d="M45 16 L66 68 H24 Z" fill="currentColor"/>
-        <rect x="22" y="66" width="46" height="10" rx="3" fill="rgba(0,0,0,0.25)"/>
-        <path d="M38 34 H52" stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-linecap="round"/>
-      </svg>`,
-
-    // Goal like v1: clear goal frame + net
-    goal: `
-      <svg xmlns="http://www.w3.org/2000/svg" width="140" height="90" viewBox="0 0 140 90">
-        <rect x="14" y="20" width="112" height="50" fill="none" stroke="currentColor" stroke-width="6"/>
-        <line x1="14" y1="70" x2="30" y2="84" stroke="currentColor" stroke-width="6"/>
-        <line x1="126" y1="70" x2="110" y2="84" stroke="currentColor" stroke-width="6"/>
-        <line x1="30" y1="84" x2="110" y2="84" stroke="currentColor" stroke-width="6"/>
-        <!-- net -->
-        <g stroke="rgba(255,255,255,0.45)" stroke-width="2">
-          <line x1="24" y1="28" x2="24" y2="78"/>
-          <line x1="40" y1="28" x2="40" y2="80"/>
-          <line x1="56" y1="28" x2="56" y2="82"/>
-          <line x1="72" y1="28" x2="72" y2="82"/>
-          <line x1="88" y1="28" x2="88" y2="82"/>
-          <line x1="104" y1="28" x2="104" y2="80"/>
-          <line x1="120" y1="28" x2="120" y2="78"/>
-          <line x1="18" y1="38" x2="122" y2="38"/>
-          <line x1="18" y1="52" x2="122" y2="52"/>
-          <line x1="18" y1="66" x2="122" y2="66"/>
-        </g>
-      </svg>`,
-
-    mannequin: `
-      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="140" viewBox="0 0 90 140">
-        <path d="M45 12
-                 C55 12 62 20 62 30
-                 C62 42 54 48 45 48
-                 C36 48 28 42 28 30
-                 C28 20 35 12 45 12 Z"
-              fill="rgba(255,255,255,0.22)"/>
-        <path d="M24 52
-                 Q45 40 66 52
-                 L70 120
-                 Q45 134 20 120 Z"
-              fill="currentColor"/>
-        <path d="M30 62 Q45 56 60 62" stroke="rgba(255,255,255,0.55)" stroke-width="4" fill="none" stroke-linecap="round"/>
-      </svg>`,
-
-    pole: `
-      <svg xmlns="http://www.w3.org/2000/svg" width="60" height="140" viewBox="0 0 60 140">
-        <rect x="26" y="12" width="8" height="112" rx="4" fill="currentColor"/>
-        <rect x="16" y="118" width="28" height="10" rx="4" fill="rgba(0,0,0,0.25)"/>
-        <circle cx="30" cy="20" r="6" fill="rgba(255,255,255,0.25)"/>
-      </svg>`,
-
-    // Better flag: pole + triangular cloth with crease
-    flag: `
-      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="140" viewBox="0 0 90 140">
-        <rect x="22" y="10" width="8" height="120" rx="4" fill="currentColor"/>
-        <path d="M30 18 L72 30 L30 46 Z" fill="rgba(255,255,255,0.22)"/>
-        <path d="M30 18 L70 30 L30 46 Z" fill="currentColor"/>
-        <path d="M30 18 Q50 28 30 46" stroke="rgba(0,0,0,0.22)" stroke-width="3" fill="none"/>
-        <rect x="14" y="124" width="24" height="10" rx="4" fill="rgba(0,0,0,0.25)"/>
-      </svg>`
-  };
-
-  function svgIconDataUrl(svg){
-    // Uses currentColor in SVG; Fabric will apply tint by setting 'fill' on SVG elements when we load.
-    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.trim());
-  }
-
+(() => {
   // -----------------------
   // Fabric canvas setup
   // -----------------------
@@ -509,276 +314,475 @@
     selection: true
   });
 
-  // Better touch / mobile selection
-  canvas.on('touch:gesture', function(){});
-  canvas.on('touch:drag', function(){});
-  canvas.on('touch:orientation', function(){});
-  canvas.on('touch:shake', function(){});
+  // Better touch behaviour
+  canvas.allowTouchScrolling = true;
 
+  // State
   let currentColor = document.getElementById('colorPicker').value;
-  let mode = 'edit'; // edit | add | lineStraight | lineArrow | lineDashed | lineCurved | freeDraw
-  let addType = '';
-  let isDrawingLine = false;
-  let lineTemp = null;
+  let isEditMode = true;   // true = select/transform; false = placing/drawing
+  let placingKind = document.getElementById('objectSelect').value;
+  let lineKind = document.getElementById('lineSelect').value;
+
+  // Undo/redo
+  const undoStack = [];
+  const redoStack = [];
+  let isRestoring = false;
+
+  // Background pitch group
+  let pitchGroup = null;
+
+  // For line drawing
+  let drawingLine = null;
+  let drawingPath = null;
   let lineStart = null;
 
-  // Undo/redo history
-  const history = [];
-  let historyIndex = -1;
-  const MAX_HISTORY = 80;
+  // Helpers
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  function pushHistory(){
-    const json = canvas.toDatalessJSON(['selectable','evented','name','tgType']);
-    // trim any redo states
-    history.splice(historyIndex + 1);
-    history.push(json);
-    if(history.length > MAX_HISTORY) history.shift();
-    historyIndex = history.length - 1;
+  function pushHistory() {
+    if (isRestoring) return;
+    const json = canvas.toDatalessJSON(['name','lockUniScaling','originX','originY']);
+    undoStack.push(json);
+    redoStack.length = 0;
   }
 
-  function loadHistory(idx){
-    const state = history[idx];
-    if(!state) return;
-    canvas.loadFromJSON(state, () => {
-      applyPitch(currentPitch); // ensure pitch stays
+  function restoreFrom(stackFrom, stackTo) {
+    if (!stackFrom.length) return;
+    isRestoring = true;
+    const current = canvas.toDatalessJSON(['name','lockUniScaling','originX','originY']);
+    stackTo.push(current);
+    const prev = stackFrom.pop();
+    canvas.loadFromJSON(prev, () => {
+      // re-lock pitch
+      relockPitch();
       canvas.renderAll();
+      isRestoring = false;
     });
   }
 
-  // Keyboard shortcuts
-  document.addEventListener('keydown', (e) => {
-    const z = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z';
-    const y = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y';
-    if(z){
-      e.preventDefault();
-      undo();
-    }
-    if(y){
-      e.preventDefault();
-      redo();
-    }
-    if(e.key === 'Delete' || e.key === 'Backspace'){
-      const active = canvas.getActiveObjects();
-      if(active && active.length){
-        active.forEach(o => canvas.remove(o));
-        canvas.discardActiveObject();
-        canvas.requestRenderAll();
-        pushHistory();
-      }
-    }
-  });
+  document.getElementById('undoBtn').addEventListener('click', () => restoreFrom(undoStack, redoStack));
+  document.getElementById('redoBtn').addEventListener('click', () => restoreFrom(redoStack, undoStack));
 
-  // -----------------------
-  // Pitch handling
-  // -----------------------
-  let currentPitch = 'full';
-
-  function applyPitch(type){
-    currentPitch = type;
-    let url = svgToDataUrl(pitchSVG_full);
-    if(type === 'half') url = svgToDataUrl(pitchSVG_half);
-    if(type === 'blank') url = svgToDataUrl(pitchSVG_blank);
-
-    fabric.Image.fromURL(url, (img) => {
-      // scale to canvas size exactly
-      img.set({
-        originX:'left',
-        originY:'top',
-        selectable:false,
-        evented:false
-      });
-      img.scaleToWidth(canvas.getWidth());
-      img.scaleToHeight(canvas.getHeight());
-      canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
-    }, { crossOrigin: 'anonymous' });
-  }
-
-  // Initialize pitch
-  applyPitch('full');
-
-  document.getElementById('pitchType').addEventListener('change', (e) => {
-    applyPitch(e.target.value);
-  });
-
-  // Keep pitch correct on resize (responsive)
-  function resizeCanvasToContainer(){
-    const wrapper = document.querySelector('.canvasWrap');
-    const panel = wrapper.getBoundingClientRect();
-    // Maintain aspect ratio close to 1400x820 (~1.707)
-    const targetW = Math.min(panel.width - 2, 1200);
-    const targetH = Math.round(targetW / 1.707);
-    canvas.setWidth(Math.max(320, targetW));
-    canvas.setHeight(Math.max(220, targetH));
-    applyPitch(currentPitch);
-    canvas.renderAll();
-  }
-
-  window.addEventListener('resize', () => {
-    // keep objects positions relative? We keep it simple: don't rescale objects automatically.
-    // If you want auto-rescale later, we can implement.
-    resizeCanvasToContainer();
-  });
-
-  // Run once on load for mobile fitting
-  resizeCanvasToContainer();
-
-  // -----------------------
-  // Mode controls
-  // -----------------------
-  const editBtn = document.getElementById('editBtn');
-  const addSelect = document.getElementById('addObjectSelect');
-
-  function setMode(newMode){
-    mode = newMode;
-
-    // Button active states
-    const btns = [
-      ['lineStraightBtn','lineStraight'],
-      ['lineArrowBtn','lineArrow'],
-      ['lineDashedBtn','lineDashed'],
-      ['lineCurvedBtn','lineCurved'],
-      ['freeDrawBtn','freeDraw']
-    ];
-    btns.forEach(([id, m]) => document.getElementById(id).classList.toggle('active', mode===m));
-    editBtn.classList.toggle('active', mode==='edit');
-
-    // Fabric selection toggle
-    const isEdit = (mode === 'edit');
-    canvas.isDrawingMode = (mode === 'freeDraw');
-
-    if(canvas.isDrawingMode){
-      canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-      canvas.freeDrawingBrush.color = currentColor;
-      canvas.freeDrawingBrush.width = 4;
-    }
-
-    canvas.selection = isEdit;
-    canvas.forEachObject(o => {
-      if(o === canvas.backgroundImage) return;
-      o.selectable = isEdit;
-      o.evented = isEdit;
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    pushHistory();
+    canvas.getObjects().forEach(obj => {
+      if (obj.name !== 'pitch') canvas.remove(obj);
     });
-
     canvas.discardActiveObject();
+    canvas.requestRenderAll();
+  });
+
+  // -----------------------
+  // UI bindings
+  // -----------------------
+  document.getElementById('colorPicker').addEventListener('input', (e) => {
+    currentColor = e.target.value;
+    const active = canvas.getActiveObject();
+    if (active && active.name !== 'pitch') {
+      pushHistory();
+      if (active.type === 'group' || active.type === 'path' || active.type === 'polyline' || active.type === 'line') {
+        // stroke-based
+        if (active.stroke) active.set('stroke', currentColor);
+        if (active.fill && active.fill !== 'transparent') active.set('fill', currentColor);
+      } else {
+        if (active.fill) active.set('fill', currentColor);
+        if (active.stroke) active.set('stroke', currentColor);
+      }
+      canvas.requestRenderAll();
+    }
+  });
+
+  document.getElementById('objectSelect').addEventListener('change', (e) => {
+    placingKind = e.target.value;
+    // If you pick an object, go to add mode automatically (keeps your current behaviour)
+    setMode(false);
+  });
+
+  document.getElementById('lineSelect').addEventListener('change', (e) => {
+    lineKind = e.target.value;
+    setMode(false);
+  });
+
+  document.getElementById('editBtn').addEventListener('click', () => {
+    setMode(true);
+  });
+
+  function setMode(edit) {
+    isEditMode = edit;
+    canvas.isDrawingMode = (!isEditMode && lineKind === 'free');
+    canvas.selection = isEditMode;
+    canvas.forEachObject(obj => {
+      if (obj.name === 'pitch') return;
+      obj.selectable = isEditMode;
+      obj.evented = true;
+    });
+    document.getElementById('modeHint').textContent = isEditMode
+      ? 'Mode: Edit (select & transform)'
+      : (lineKind === 'free' ? 'Mode: Free draw' : 'Mode: Add/Draw');
+    // Button style
+    document.getElementById('editBtn').classList.toggle('primary', isEditMode);
+  }
+
+  // -----------------------
+  // Pitch drawing (VECTOR)
+  // Fixes: pitch not showing + random corner arcs removed
+  // Half pitch = exactly half (like v1)
+  // -----------------------
+  const pitchSelect = document.getElementById('pitchSelect');
+  pitchSelect.addEventListener('change', () => {
+    pushHistory();
+    drawPitch(pitchSelect.value);
+  });
+
+  function relockPitch() {
+    canvas.forEachObject(obj => {
+      if (obj.name === 'pitch') {
+        obj.selectable = false;
+        obj.evented = false;
+        obj.hasControls = false;
+        obj.hoverCursor = 'default';
+        obj.lockMovementX = obj.lockMovementY = true;
+        obj.lockScalingX = obj.lockScalingY = true;
+        obj.lockRotation = true;
+      }
+    });
+  }
+
+  function drawPitch(type) {
+    // Remove existing pitch group
+    canvas.getObjects().forEach(obj => {
+      if (obj.name === 'pitch') canvas.remove(obj);
+    });
+
+    const W = canvas.getWidth();
+    const H = canvas.getHeight();
+
+    // Blank pitch means no green background lines at all.
+    if (type === 'blank') {
+      canvas.setBackgroundColor('#0a0b0e', canvas.renderAll.bind(canvas));
+      canvas.requestRenderAll();
+      return;
+    }
+
+    // Pitch base
+    const pad = 55;
+    const x0 = pad;
+    const y0 = pad;
+    const x1 = W - pad;
+    const y1 = H - pad;
+
+    // For half pitch (left half), we draw only one half-width area.
+    // (This matches your v1 “one half of the pitch” behaviour.)
+    const fullWidth = x1 - x0;
+    const halfX1 = x0 + fullWidth/2;
+
+    const pitchRect = (type === 'half')
+      ? { x0, y0, x1: halfX1, y1 }
+      : { x0, y0, x1, y1 };
+
+    // Background colour + subtle stripes (vector rectangles)
+    canvas.setBackgroundColor('#0a0b0e', () => {});
+
+    const stripes = [];
+    const stripeCount = 12;
+    const pw = pitchRect.x1 - pitchRect.x0;
+    const ph = pitchRect.y1 - pitchRect.y0;
+
+    for (let i=0;i<stripeCount;i++){
+      const sx = pitchRect.x0 + (pw/stripeCount)*i;
+      stripes.push(new fabric.Rect({
+        left: sx,
+        top: pitchRect.y0,
+        width: pw/stripeCount + 1,
+        height: ph,
+        fill: (i%2===0) ? 'rgba(58,134,86,.55)' : 'rgba(50,122,78,.55)',
+        selectable:false, evented:false
+      }));
+    }
+
+    const outer = new fabric.Rect({
+      left: pitchRect.x0, top: pitchRect.y0,
+      width: pw, height: ph,
+      fill: 'rgba(0,0,0,0)',
+      stroke: 'rgba(235,235,235,.85)',
+      strokeWidth: 3,
+      selectable:false, evented:false
+    });
+
+    const markings = [];
+
+    // halfway line & center circle only for full pitch
+    if (type === 'full') {
+      const midX = (pitchRect.x0 + pitchRect.x1)/2;
+      markings.push(new fabric.Line([midX, pitchRect.y0, midX, pitchRect.y1], {
+        stroke: 'rgba(235,235,235,.85)', strokeWidth: 3,
+        selectable:false, evented:false
+      }));
+      const centerY = (pitchRect.y0 + pitchRect.y1)/2;
+      markings.push(new fabric.Circle({
+        left: midX, top: centerY,
+        originX:'center', originY:'center',
+        radius: Math.min(pw,ph)*0.12,
+        fill:'rgba(0,0,0,0)',
+        stroke:'rgba(235,235,235,.85)',
+        strokeWidth:3,
+        selectable:false, evented:false
+      }));
+      markings.push(new fabric.Circle({
+        left: midX, top: centerY,
+        originX:'center', originY:'center',
+        radius: 3.5,
+        fill:'rgba(235,235,235,.85)',
+        selectable:false, evented:false
+      }));
+    }
+
+    // Right-side penalty box + 6-yard box for full/half (since half is left half, we put the goal on the RIGHT edge of that half)
+    // This matches your screenshot where the goal is on the right side.
+    const goalX = pitchRect.x1;
+    const centerY = (pitchRect.y0 + pitchRect.y1)/2;
+
+    // Penalty box dims relative
+    const penDepth = pw * 0.18;
+    const penWidth = ph * 0.55;
+    const sixDepth = pw * 0.07;
+    const sixWidth = ph * 0.28;
+
+    // Penalty area
+    markings.push(new fabric.Rect({
+      left: goalX - penDepth,
+      top: centerY - penWidth/2,
+      width: penDepth,
+      height: penWidth,
+      fill:'rgba(0,0,0,0)',
+      stroke:'rgba(235,235,235,.85)',
+      strokeWidth:3,
+      selectable:false, evented:false
+    }));
+
+    // 6-yard area
+    markings.push(new fabric.Rect({
+      left: goalX - sixDepth,
+      top: centerY - sixWidth/2,
+      width: sixDepth,
+      height: sixWidth,
+      fill:'rgba(0,0,0,0)',
+      stroke:'rgba(235,235,235,.85)',
+      strokeWidth:3,
+      selectable:false, evented:false
+    }));
+
+    // Penalty spot
+    markings.push(new fabric.Circle({
+      left: goalX - penDepth*0.60,
+      top: centerY,
+      originX:'center', originY:'center',
+      radius: 3.5,
+      fill:'rgba(235,235,235,.85)',
+      selectable:false, evented:false
+    }));
+
+    // Penalty arc ("D") — keep it (not corner arcs). No corner semi-circles drawn.
+    const dRadius = ph * 0.16;
+    const dCenterX = goalX - penDepth*0.60;
+    const arc = new fabric.Path(
+      `M ${dCenterX - dRadius} ${centerY}
+       A ${dRadius} ${dRadius} 0 0 1 ${dCenterX + dRadius} ${centerY}`,
+      {
+        fill:'',
+        stroke:'rgba(235,235,235,.85)',
+        strokeWidth:3,
+        selectable:false, evented:false
+      }
+    );
+    // Clip the arc so only the outside half shows (like a "D")
+    // We do this by masking it with a rect that sits outside the box.
+    const mask = new fabric.Rect({
+      left: dCenterX,
+      top: centerY - dRadius - 10,
+      width: dRadius + 20,
+      height: dRadius*2 + 20,
+      selectable:false, evented:false
+    });
+    arc.clipPath = mask;
+    markings.push(arc);
+
+    // Goal frame (on pitch background only)
+    const goalW = ph * 0.16;
+    const goalDepth = pw * 0.03;
+    markings.push(new fabric.Rect({
+      left: goalX - goalDepth,
+      top: centerY - goalW/2,
+      width: goalDepth,
+      height: goalW,
+      fill:'rgba(0,0,0,0)',
+      stroke:'rgba(235,235,235,.85)',
+      strokeWidth:3,
+      selectable:false, evented:false
+    }));
+
+    pitchGroup = new fabric.Group([...stripes, outer, ...markings], {
+      name:'pitch',
+      selectable:false,
+      evented:false,
+      left:0, top:0
+    });
+
+    canvas.add(pitchGroup);
+    canvas.sendToBack(pitchGroup);
+    relockPitch();
     canvas.requestRenderAll();
   }
 
-  editBtn.addEventListener('click', () => {
-    setMode('edit');
-    addSelect.value = '';
-    addType = '';
-  });
+  // Initial pitch
+  drawPitch(pitchSelect.value);
 
-  addSelect.addEventListener('change', (e) => {
-    addType = e.target.value;
-    if(addType){
-      setMode('add');
-      // keep edit button not active
-      editBtn.classList.remove('active');
-    } else {
-      setMode('edit');
-    }
-  });
-
-  // Line buttons
-  document.getElementById('lineStraightBtn').addEventListener('click', () => setMode('lineStraight'));
-  document.getElementById('lineArrowBtn').addEventListener('click', () => setMode('lineArrow'));
-  document.getElementById('lineDashedBtn').addEventListener('click', () => setMode('lineDashed'));
-  document.getElementById('lineCurvedBtn').addEventListener('click', () => setMode('lineCurved'));
-  document.getElementById('freeDrawBtn').addEventListener('click', () => setMode('freeDraw'));
-
-  // Color
-  document.getElementById('colorPicker').addEventListener('change', (e) => {
-    currentColor = e.target.value;
-    if(canvas.isDrawingMode && canvas.freeDrawingBrush){
-      canvas.freeDrawingBrush.color = currentColor;
-    }
-    // If something is selected, tint it
-    const obj = canvas.getActiveObject();
-    if(obj){
-      tintObject(obj, currentColor);
-      canvas.requestRenderAll();
-      pushHistory();
-    }
-  });
-
-  function tintObject(obj, color){
-    // For SVG groups/images: easiest is apply a ColorMatrix? We'll do per-type:
-    // - If it's a group created from SVG, attempt set fill on sub-objects
-    if(obj.type === 'group'){
-      obj._objects.forEach(o => {
-        if(o.fill) o.set('fill', color);
-        if(o.stroke && o.stroke !== 'rgba(255,255,255,0.45)') o.set('stroke', color);
-      });
-      obj.setCoords();
-      return;
-    }
-    if(obj.type === 'path' || obj.type === 'line'){
-      obj.set('stroke', color);
-      return;
-    }
-    if(obj.type === 'i-text' || obj.type === 'text'){
-      obj.set('fill', color);
-      return;
-    }
-    // fallback
-    if(obj.fill) obj.set('fill', color);
-    if(obj.stroke) obj.set('stroke', color);
+  // -----------------------
+  // Icons (SVG data)
+  // -----------------------
+  function svgDataUri(svg) {
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
 
-  // -----------------------
-  // Add objects
-  // -----------------------
-  function addSVGIcon(key, x, y){
-    const url = svgIconDataUrl(ICONS[key]);
-    fabric.loadSVGFromURL(url, (objects, options) => {
-      const group = fabric.util.groupSVGElements(objects, options);
-      group.set({
-        left: x,
-        top: y,
-        originX: 'center',
-        originY: 'center',
-        hasControls: true,
-        hasBorders: true,
-        cornerStyle: 'circle',
-        cornerColor: 'rgba(255,212,0,0.85)',
-        borderColor: 'rgba(255,212,0,0.55)',
-        transparentCorners: false,
-        padding: 4,
-        tgType: key,
-        name: key
+  const ICONS = {
+    player: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
+        <defs>
+          <radialGradient id="g" cx="35%" cy="30%" r="70%">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+            <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="45" cy="45" r="28" fill="${currentColor}" />
+        <circle cx="45" cy="45" r="28" fill="url(#g)"/>
+        <circle cx="45" cy="45" r="30" fill="none" stroke="rgba(0,0,0,0.25)" stroke-width="3"/>
+      </svg>`),
+    cone: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
+        <path d="M45 12 L65 70 H25 Z" fill="${currentColor}" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+        <rect x="22" y="70" width="46" height="10" rx="4" fill="rgba(0,0,0,.25)"/>
+      </svg>`),
+    ball: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
+        <circle cx="45" cy="45" r="28" fill="#ffffff" stroke="rgba(0,0,0,.35)" stroke-width="3"/>
+        <polygon points="45,28 54,35 50,46 40,46 36,35" fill="rgba(0,0,0,.75)"/>
+        <path d="M36 35 L28 42 L31 55 L40 46" fill="rgba(0,0,0,.12)"/>
+        <path d="M54 35 L62 42 L59 55 L50 46" fill="rgba(0,0,0,.12)"/>
+        <path d="M40 46 L31 55 L45 62 L59 55 L50 46" fill="rgba(0,0,0,.12)"/>
+      </svg>`),
+    goal: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="120" height="90" viewBox="0 0 120 90">
+        <rect x="18" y="18" width="84" height="54" fill="rgba(255,255,255,.08)" stroke="rgba(235,235,235,.95)" stroke-width="4"/>
+        <line x1="18" y1="36" x2="102" y2="36" stroke="rgba(235,235,235,.35)" stroke-width="2"/>
+        <line x1="18" y1="54" x2="102" y2="54" stroke="rgba(235,235,235,.35)" stroke-width="2"/>
+        <line x1="36" y1="18" x2="36" y2="72" stroke="rgba(235,235,235,.35)" stroke-width="2"/>
+        <line x1="54" y1="18" x2="54" y2="72" stroke="rgba(235,235,235,.35)" stroke-width="2"/>
+        <line x1="72" y1="18" x2="72" y2="72" stroke="rgba(235,235,235,.35)" stroke-width="2"/>
+        <line x1="90" y1="18" x2="90" y2="72" stroke="rgba(235,235,235,.35)" stroke-width="2"/>
+      </svg>`),
+    mannequin: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="120" viewBox="0 0 90 120">
+        <rect x="34" y="10" width="22" height="12" rx="6" fill="${currentColor}" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+        <path d="M25 28 Q45 18 65 28 L58 104 Q45 112 32 104 Z"
+              fill="${currentColor}" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+        <rect x="24" y="104" width="42" height="10" rx="4" fill="rgba(0,0,0,.25)"/>
+      </svg>`),
+    pole: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="140" viewBox="0 0 40 140">
+        <rect x="17" y="10" width="6" height="110" rx="3" fill="${currentColor}" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+        <rect x="8" y="120" width="24" height="10" rx="5" fill="rgba(0,0,0,.25)"/>
+      </svg>`),
+    flag: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="80" height="140" viewBox="0 0 80 140">
+        <rect x="22" y="16" width="6" height="108" rx="3" fill="rgba(235,235,235,.9)" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+        <path d="M28 20
+                 C 45 18, 52 26, 68 22
+                 L 68 52
+                 C 52 56, 45 48, 28 50 Z"
+              fill="${currentColor}" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+        <rect x="14" y="124" width="22" height="10" rx="5" fill="rgba(0,0,0,.25)"/>
+      </svg>`)
+  };
+
+  function makeIcon(kind, x, y) {
+    // Refresh icon color-dependent svgs
+    if (['player','cone','mannequin','pole','flag'].includes(kind)) {
+      // regenerate with currentColor
+      // easiest: replace fill in existing SVG? We'll just rebuild using ICONS by re-calling svgDataUri strings.
+      // For simplicity and reliability: rebuild those icons on the fly:
+    }
+
+    const svgMap = {
+      player: () => svgDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
+          <defs>
+            <radialGradient id="g" cx="35%" cy="30%" r="70%">
+              <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+              <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="45" cy="45" r="28" fill="${currentColor}" />
+          <circle cx="45" cy="45" r="28" fill="url(#g)"/>
+          <circle cx="45" cy="45" r="30" fill="none" stroke="rgba(0,0,0,0.25)" stroke-width="3"/>
+        </svg>`),
+      cone: () => svgDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
+          <path d="M45 12 L65 70 H25 Z" fill="${currentColor}" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+          <rect x="22" y="70" width="46" height="10" rx="4" fill="rgba(0,0,0,.25)"/>
+        </svg>`),
+      ball: () => ICONS.ball,
+      goal: () => ICONS.goal,
+      mannequin: () => svgDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="90" height="120" viewBox="0 0 90 120">
+          <rect x="34" y="10" width="22" height="12" rx="6" fill="${currentColor}" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+          <path d="M25 28 Q45 18 65 28 L58 104 Q45 112 32 104 Z"
+                fill="${currentColor}" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+          <rect x="24" y="104" width="42" height="10" rx="4" fill="rgba(0,0,0,.25)"/>
+        </svg>`),
+      pole: () => svgDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="140" viewBox="0 0 40 140">
+          <rect x="17" y="10" width="6" height="110" rx="3" fill="${currentColor}" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+          <rect x="8" y="120" width="24" height="10" rx="5" fill="rgba(0,0,0,.25)"/>
+        </svg>`),
+      flag: () => svgDataUri(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="140" viewBox="0 0 80 140">
+          <rect x="22" y="16" width="6" height="108" rx="3" fill="rgba(235,235,235,.9)" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+          <path d="M28 20
+                   C 45 18, 52 26, 68 22
+                   L 68 52
+                   C 52 56, 45 48, 28 50 Z"
+                fill="${currentColor}" stroke="rgba(0,0,0,.25)" stroke-width="3"/>
+          <rect x="14" y="124" width="22" height="10" rx="5" fill="rgba(0,0,0,.25)"/>
+        </svg>`)
+    };
+
+    const uri = svgMap[kind] ? svgMap[kind]() : ICONS.cone;
+
+    return new Promise((resolve) => {
+      fabric.loadSVGFromURL(uri, (objects, options) => {
+        const obj = fabric.util.groupSVGElements(objects, options);
+        obj.set({
+          left: x,
+          top: y,
+          originX: 'center',
+          originY: 'center',
+          name: kind,
+          cornerStyle: 'circle',
+          cornerColor: '#ffd84d',
+          transparentCorners: false,
+          borderColor: 'rgba(255,216,77,.7)',
+          lockUniScaling: false
+        });
+
+        // Default sizing per type
+        let scale = 0.55;
+        if (kind === 'goal') scale = 0.55;
+        if (kind === 'pole') scale = 0.55;
+        if (kind === 'flag') scale = 0.55;
+        obj.scale(scale);
+
+        resolve(obj);
       });
-
-      // Tint main fills to currentColor, but preserve net lines on goal etc.
-      group._objects.forEach(o => {
-        if(o.fill && o.fill !== 'none'){
-          // keep ball as true colors
-          if(key !== 'ball') o.set('fill', currentColor);
-        }
-        // preserve goal/net white lines; only tint frame (currentColor already)
-        if(key === 'goal' && o.stroke && String(o.stroke).includes('rgba(255,255,255')) {
-          // keep as is
-        } else if(o.stroke && (key !== 'ball')) {
-          // lightly tint strokes if they are not translucent whites
-          if(!String(o.stroke).includes('rgba(255,255,255')) o.set('stroke', currentColor);
-        }
-      });
-
-      // Size defaults
-      if(key === 'goal'){
-        group.scale(0.65);
-      } else if(key === 'mannequin' || key === 'pole' || key === 'flag'){
-        group.scale(0.55);
-      } else if(key === 'ball'){
-        group.scale(0.45);
-      } else {
-        group.scale(0.55);
-      }
-
-      canvas.add(group);
-      canvas.setActiveObject(group);
-      canvas.requestRenderAll();
-      pushHistory();
     });
   }
 
@@ -786,400 +790,290 @@
     const t = new fabric.IText('Text', {
       left: x, top: y,
       originX:'center', originY:'center',
-      fontSize: 28,
       fill: currentColor,
-      fontWeight: '700',
-      fontFamily: 'Arial',
-      editable: true,
-      tgType: 'text'
+      fontSize: 26,
+      fontWeight: 700,
+      name:'text',
+      editable: true
     });
-    canvas.add(t);
-    canvas.setActiveObject(t);
-    canvas.requestRenderAll();
-    // enter editing immediately
-    setTimeout(() => {
-      t.enterEditing();
-      t.selectAll();
-      canvas.requestRenderAll();
-    }, 0);
-    pushHistory();
+    t.setControlsVisibility({ mtr:true });
+    return t;
   }
 
-  // In add mode, click to place
-  canvas.on('mouse:down', (opt) => {
-    const p = canvas.getPointer(opt.e);
+  // -----------------------
+  // Click to place objects
+  // -----------------------
+  canvas.on('mouse:down', async (opt) => {
+    if (isEditMode) return;
 
-    // Free draw is handled by Fabric
-    if(mode === 'freeDraw') return;
+    const pointer = canvas.getPointer(opt.e);
+    const x = pointer.x;
+    const y = pointer.y;
 
-    // Lines
-    if(mode.startsWith('line')){
-      isDrawingLine = true;
-      lineStart = { x: p.x, y: p.y };
+    // Free draw handled by fabric drawing mode
+    if (lineKind === 'free') return;
 
-      if(mode === 'lineCurved'){
-        // temp path placeholder
-        const path = new fabric.Path(`M ${p.x} ${p.y} Q ${p.x} ${p.y} ${p.x} ${p.y}`, {
+    // If clicking on object in add mode, ignore (prevents accidental adds)
+    const target = opt.target;
+    if (target && target.name !== 'pitch') return;
+
+    // Line drawing
+    if (['straight','arrow','dashed','curved'].includes(lineKind)) {
+      lineStart = {x,y};
+      if (lineKind === 'curved') {
+        // temporary quadratic curve using Path with control point mid
+        drawingLine = new fabric.Path(`M ${x} ${y} Q ${x} ${y} ${x} ${y}`, {
           stroke: currentColor,
-          strokeWidth: 4,
           fill: '',
+          strokeWidth: 5,
           selectable: false,
           evented: false,
-          objectCaching: false
+          name: 'line'
         });
-        if(mode === 'lineDashed') path.strokeDashArray = [10, 10];
-        lineTemp = path;
-        canvas.add(lineTemp);
-        return;
+        canvas.add(drawingLine);
+      } else {
+        drawingLine = new fabric.Line([x,y,x,y], {
+          stroke: currentColor,
+          strokeWidth: 5,
+          selectable:false,
+          evented:false,
+          name:'line'
+        });
+        if (lineKind === 'dashed') drawingLine.set({ strokeDashArray:[14,10] });
+        canvas.add(drawingLine);
       }
-
-      const points = [p.x, p.y, p.x, p.y];
-      const line = new fabric.Line(points, {
-        strokeWidth: 4,
-        stroke: currentColor,
-        selectable: false,
-        evented: false,
-        objectCaching: false
-      });
-      if(mode === 'lineDashed') line.strokeDashArray = [10, 10];
-      lineTemp = line;
-      canvas.add(lineTemp);
+      canvas.requestRenderAll();
       return;
     }
 
-    // Add objects
-    if(mode === 'add' && addType){
-      if(addType === 'text') addText(p.x, p.y);
-      else addSVGIcon(addType, p.x, p.y);
+    // Place object
+    pushHistory();
+    if (placingKind === 'text') {
+      const t = addText(x,y);
+      canvas.add(t);
+      canvas.setActiveObject(t);
+      canvas.requestRenderAll();
+      // Immediately edit on mobile/desktop
+      setTimeout(()=> t.enterEditing(), 0);
       return;
     }
+
+    const obj = await makeIcon(placingKind, x, y);
+    canvas.add(obj);
+    canvas.setActiveObject(obj);
+    canvas.requestRenderAll();
   });
 
   canvas.on('mouse:move', (opt) => {
-    if(!isDrawingLine || !lineTemp || !lineStart) return;
+    if (isEditMode) return;
+    if (!drawingLine || !lineStart) return;
+
     const p = canvas.getPointer(opt.e);
+    const x2 = p.x;
+    const y2 = p.y;
 
-    if(mode === 'lineCurved'){
-      // control point is midpoint bumped by perpendicular offset
-      const sx = lineStart.x, sy = lineStart.y, ex = p.x, ey = p.y;
-      const mx = (sx + ex) / 2, my = (sy + ey) / 2;
-      // Use shift key to exaggerate curve
-      const factor = opt.e.shiftKey ? 0.35 : 0.18;
-      const dx = ex - sx, dy = ey - sy;
-      const cx = mx - dy * factor;
-      const cy = my + dx * factor;
-
-      const d = `M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`;
-      lineTemp.set({ path: fabric.Path.parsePath(d) });
-      lineTemp.setCoords();
-      canvas.requestRenderAll();
-      return;
+    if (lineKind === 'curved') {
+      // Control point: mid + perpendicular offset
+      const mx = (lineStart.x + x2)/2;
+      const my = (lineStart.y + y2)/2;
+      const dx = x2 - lineStart.x;
+      const dy = y2 - lineStart.y;
+      const len = Math.max(1, Math.hypot(dx,dy));
+      const nx = -dy/len;
+      const ny = dx/len;
+      const bend = 70; // curve intensity
+      const cx = mx + nx*bend;
+      const cy = my + ny*bend;
+      drawingLine.set({ path: [
+        ['M', lineStart.x, lineStart.y],
+        ['Q', cx, cy, x2, y2]
+      ]});
+    } else {
+      drawingLine.set({ x2, y2 });
     }
 
-    lineTemp.set({ x2: p.x, y2: p.y });
-    lineTemp.setCoords();
     canvas.requestRenderAll();
   });
 
-  canvas.on('mouse:up', (opt) => {
-    if(!isDrawingLine) return;
-    isDrawingLine = false;
+  canvas.on('mouse:up', () => {
+    if (isEditMode) return;
+    if (!drawingLine) return;
 
-    if(!lineTemp) return;
-    const obj = lineTemp;
-    lineTemp = null;
+    // Finalize line, add arrow head if needed
+    pushHistory();
 
-    // Convert arrow line into group with triangle head
-    if(mode === 'lineArrow'){
-      const x1 = obj.x1, y1 = obj.y1, x2 = obj.x2, y2 = obj.y2;
-      canvas.remove(obj);
-
-      const baseLine = new fabric.Line([x1,y1,x2,y2], {
-        stroke: currentColor,
-        strokeWidth: 4,
-        selectable: false,
-        evented: false,
-        objectCaching: false
-      });
-
+    if (lineKind === 'arrow') {
+      const x1 = drawingLine.x1, y1 = drawingLine.y1, x2 = drawingLine.x2, y2 = drawingLine.y2;
       const angle = Math.atan2(y2 - y1, x2 - x1);
-      const headLen = 16;
-      const tri = new fabric.Triangle({
-        left: x2,
-        top: y2,
-        originX: 'center',
-        originY: 'center',
-        width: headLen,
-        height: headLen,
-        fill: currentColor,
-        angle: angle * 180 / Math.PI + 90,
+      const headLen = 18;
+      const hx1 = x2 - headLen * Math.cos(angle - Math.PI/7);
+      const hy1 = y2 - headLen * Math.sin(angle - Math.PI/7);
+      const hx2 = x2 - headLen * Math.cos(angle + Math.PI/7);
+      const hy2 = y2 - headLen * Math.sin(angle + Math.PI/7);
+
+      const head = new fabric.Polygon(
+        [{x:x2,y:y2},{x:hx1,y:hy1},{x:hx2,y:hy2}],
+        { fill: currentColor, selectable:false, evented:false, name:'arrowHead' }
+      );
+
+      const grp = new fabric.Group([drawingLine, head], {
+        name:'lineGroup',
+        selectable: false,
+        evented: false
+      });
+      canvas.remove(drawingLine);
+      canvas.add(grp);
+    }
+
+    drawingLine = null;
+    lineStart = null;
+  });
+
+  // Enable free drawing brush
+  canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+  canvas.freeDrawingBrush.width = 4;
+  canvas.freeDrawingBrush.color = currentColor;
+
+  canvas.on('path:created', (e) => {
+    // When free draw completes
+    pushHistory();
+    e.path.set({ stroke: currentColor, name:'freeLine' });
+  });
+
+  // Keep brush colour updated
+  document.getElementById('colorPicker').addEventListener('input', () => {
+    canvas.freeDrawingBrush.color = currentColor;
+  });
+
+  // Default to Edit mode on load
+  setMode(true);
+
+  // -----------------------
+  // Export (branding in BLACK)
+  // PNG exports what you see (including pitch) as an image
+  // PDF includes branding + notes
+  // -----------------------
+  function cloneCanvasWithBrandingBlack(cb) {
+    canvas.clone((cloned) => {
+      // Ensure same size
+      cloned.setWidth(canvas.getWidth());
+      cloned.setHeight(canvas.getHeight());
+
+      // Add black branding in top-left as a small label
+      const brand = new fabric.Text('TactiGrid', {
+        left: 18,
+        top: 14,
+        fontSize: 20,
+        fontWeight: 900,
+        fill: '#000000',
+        backgroundColor: 'rgba(255,255,255,.75)',
+        padding: 6,
         selectable: false,
         evented: false
       });
 
-      const g = new fabric.Group([baseLine, tri], {
-        selectable: false,
-        evented: false,
-        tgType: 'arrow'
-      });
-      canvas.add(g);
-    }
-
-    // Make drawn lines selectable only in edit mode
-    if(mode === 'lineStraight' || mode === 'lineDashed' || mode === 'lineCurved'){
-      obj.set({ selectable:false, evented:false, tgType: 'line' });
-    }
-
-    canvas.requestRenderAll();
-    pushHistory();
-  });
-
-  // When switching to edit mode, make lines selectable again
-  function setSelectableForAll(isSelectable){
-    canvas.forEachObject(o => {
-      if(o === canvas.backgroundImage) return;
-      o.selectable = isSelectable;
-      o.evented = isSelectable;
-    });
-    canvas.selection = isSelectable;
-    canvas.requestRenderAll();
-  }
-
-  // Keep edit mode lines editable
-  canvas.on('selection:created', () => {});
-  canvas.on('selection:updated', () => {});
-
-  // Text editing helper: double click
-  canvas.on('mouse:dblclick', (opt) => {
-    const target = opt.target;
-    if(target && (target.type === 'i-text' || target.tgType === 'text')){
-      target.enterEditing();
-      target.selectAll();
-      canvas.requestRenderAll();
-    }
-  });
-
-  // -----------------------
-  // Undo / Redo
-  // -----------------------
-  function undo(){
-    if(historyIndex <= 0) return;
-    historyIndex--;
-    loadHistory(historyIndex);
-  }
-  function redo(){
-    if(historyIndex >= history.length - 1) return;
-    historyIndex++;
-    loadHistory(historyIndex);
-  }
-
-  document.getElementById('undoBtn').addEventListener('click', undo);
-  document.getElementById('redoBtn').addEventListener('click', redo);
-
-  document.getElementById('clearBtn').addEventListener('click', () => {
-    const objs = canvas.getObjects().filter(o => o !== canvas.backgroundImage);
-    objs.forEach(o => canvas.remove(o));
-    canvas.discardActiveObject();
-    canvas.requestRenderAll();
-    pushHistory();
-  });
-
-  // Push initial state
-  setMode('edit');
-  pushHistory();
-
-  // When editing objects, push history after modify
-  canvas.on('object:modified', () => pushHistory());
-  canvas.on('path:created', (e) => {
-    // free draw paths
-    const p = e.path;
-    p.set({ stroke: currentColor, strokeWidth: 4, fill: '' });
-    // free draw paths selectable only in edit mode
-    p.selectable = (mode === 'edit');
-    p.evented = (mode === 'edit');
-    p.tgType = 'freedraw';
-    pushHistory();
-  });
-
-  // Ensure edit mode restores selectability
-  // (because we set selectable false for draw tools)
-  const _setMode = setMode;
-  setMode = function(newMode){
-    _setMode(newMode);
-    if(newMode === 'edit') setSelectableForAll(true);
-    else if(newMode !== 'edit') setSelectableForAll(false);
-    // BUT keep add tools from permanently disabling later: handled above
-  };
-
-  // -----------------------
-  // Branding overlay for exports
-  // -----------------------
-  function addBrandingOverlay(){
-    // Temporary: add a small TG mark top-left on canvas for exports only
-    const pad = 12;
-    const badge = new fabric.Group([
-      new fabric.Rect({
-        width: 92, height: 34, rx: 10, ry: 10,
-        fill: 'rgba(0,0,0,0.45)',
-        stroke: 'rgba(255,212,0,0.55)',
-        strokeWidth: 2
-      }),
-      new fabric.Text('TactiGrid', {
+      // Fabric v5 doesn't support padding on Text in all builds; simulate with a rect behind.
+      const bg = new fabric.Rect({
         left: 10, top: 8,
-        fontSize: 16,
-        fontWeight: '800',
-        fill: '#ffd400',
-        fontFamily: 'Arial'
-      })
-    ],{
-      left: pad, top: pad,
-      selectable:false, evented:false,
-      originX:'left', originY:'top',
-      name:'__tg_brand__'
+        width: 110, height: 34,
+        fill: 'rgba(255,255,255,.75)',
+        rx: 10, ry: 10,
+        selectable:false, evented:false
+      });
+
+      const label = new fabric.Group([bg, brand], {
+        left: 0, top: 0, selectable:false, evented:false
+      });
+
+      cloned.add(label);
+      cloned.bringToFront(label);
+      cloned.renderAll();
+      cb(cloned);
     });
-    canvas.add(badge);
-    badge.bringToFront();
-    canvas.requestRenderAll();
-    return badge;
   }
 
-  function removeBrandingOverlay(badge){
-    if(badge) canvas.remove(badge);
-    canvas.requestRenderAll();
-  }
-
-  // -----------------------
-  // Export PNG
-  // -----------------------
   document.getElementById('exportPngBtn').addEventListener('click', () => {
-    // Add branding overlay temporarily
-    const badge = addBrandingOverlay();
-
-    // Ensure everything is visible and colored
-    canvas.discardActiveObject();
-    canvas.renderAll();
-
-    const dataUrl = canvas.toDataURL({
-      format: 'png',
-      quality: 1,
-      multiplier: 2  // higher resolution export
+    cloneCanvasWithBrandingBlack((cloned) => {
+      const data = cloned.toDataURL({ format:'png', multiplier: 2 });
+      const a = document.createElement('a');
+      a.href = data;
+      a.download = 'tactigrid-drill.png';
+      a.click();
     });
-
-    removeBrandingOverlay(badge);
-
-    const a = document.createElement('a');
-    a.download = 'tactigrid-drill.png';
-    a.href = dataUrl;
-    a.click();
   });
 
-  // -----------------------
-  // Export PDF (includes notes + branding)
-  // -----------------------
-  document.getElementById('exportPdfBtn').addEventListener('click', async () => {
-    const { jsPDF } = window.jspdf;
-
+  document.getElementById('exportPdfBtn').addEventListener('click', () => {
     const notes = (document.getElementById('notes').value || '').trim();
 
-    // Temporary branding overlay on canvas so it appears in the image
-    const badge = addBrandingOverlay();
+    cloneCanvasWithBrandingBlack((cloned) => {
+      const data = cloned.toDataURL({ format:'png', multiplier: 2 });
 
-    canvas.discardActiveObject();
-    canvas.renderAll();
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
 
-    const imgData = canvas.toDataURL({
-      format: 'png',
-      quality: 1,
-      multiplier: 2
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+
+      // Fit image with margins
+      const margin = 32;
+      const imgMaxW = pageW - margin*2;
+      const imgMaxH = pageH * 0.68; // leave room for notes
+      const img = new Image();
+      img.onload = () => {
+        const ratio = Math.min(imgMaxW / img.width, imgMaxH / img.height);
+        const imgW = img.width * ratio;
+        const imgH = img.height * ratio;
+        const x = (pageW - imgW)/2;
+        const y = margin;
+
+        pdf.addImage(data, 'PNG', x, y, imgW, imgH);
+
+        // Notes
+        const notesTop = y + imgH + 20;
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(14);
+        pdf.setTextColor(0,0,0);
+        pdf.text('Notes', margin, notesTop);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(11);
+
+        const wrapWidth = pageW - margin*2;
+        const lines = pdf.splitTextToSize(notes || '—', wrapWidth);
+        pdf.text(lines, margin, notesTop + 18);
+
+        pdf.save('tactigrid-drill.pdf');
+      };
+      img.src = data;
     });
-
-    removeBrandingOverlay(badge);
-
-    // Create PDF (A4 portrait)
-    const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-
-    // Header branding (text)
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(255, 212, 0);
-    doc.text('TactiGrid', 40, 38);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(180, 180, 194);
-    doc.text('Drill Designer Export', 40, 55);
-
-    // Add the image below header
-    const top = 70;
-    const margin = 40;
-    const availableW = pageW - margin * 2;
-
-    // Calculate image size to fit
-    // We can approximate aspect ratio from canvas
-    const aspect = canvas.getWidth() / canvas.getHeight();
-    let imgW = availableW;
-    let imgH = imgW / aspect;
-
-    // If too tall, shrink
-    const maxImgH = pageH * 0.58;
-    if(imgH > maxImgH){
-      imgH = maxImgH;
-      imgW = imgH * aspect;
-    }
-
-    const imgX = (pageW - imgW) / 2;
-    const imgY = top;
-
-    doc.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH);
-
-    // Notes section
-    const notesTop = imgY + imgH + 18;
-    doc.setDrawColor(255, 212, 0);
-    doc.setLineWidth(1);
-    doc.line(margin, notesTop, pageW - margin, notesTop);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(255, 234, 97);
-    doc.text('Notes', margin, notesTop + 18);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(245, 245, 247);
-
-    const text = notes || '(No notes added)';
-    const wrapped = doc.splitTextToSize(text, pageW - margin * 2);
-    let y = notesTop + 34;
-
-    // If notes overflow, continue on next page(s)
-    for(let i=0; i<wrapped.length; i++){
-      if(y > pageH - 50){
-        doc.addPage();
-        y = 50;
-        doc.setFont('helvetica','bold');
-        doc.setFontSize(12);
-        doc.setTextColor(255, 234, 97);
-        doc.text('Notes (continued)', margin, 36);
-        doc.setFont('helvetica','normal');
-        doc.setFontSize(10);
-        doc.setTextColor(245,245,247);
-        y = 56;
-      }
-      doc.text(wrapped[i], margin, y);
-      y += 14;
-    }
-
-    // Footer branding
-    const footer = 'Generated with TactiGrid Drill Designer';
-    doc.setFontSize(9);
-    doc.setTextColor(180,180,194);
-    doc.text(footer, margin, pageH - 20);
-
-    doc.save('tactigrid-drill.pdf');
   });
 
+  // -----------------------
+  // Keyboard helpers
+  // -----------------------
+  document.addEventListener('keydown', (e) => {
+    const active = canvas.getActiveObject();
+    if (active && active.isEditing) return;
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      restoreFrom(undoStack, redoStack);
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+      e.preventDefault();
+      restoreFrom(redoStack, undoStack);
+    }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (active && active.name !== 'pitch') {
+        pushHistory();
+        canvas.remove(active);
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+      }
+    }
+  });
+
+})();
 </script>
 </body>
 </html>
