@@ -2,1190 +2,1184 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TactiGrid Drill Designer</title>
 
-  <!-- Konva (canvas framework) -->
-  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+  <!-- Fabric.js (canvas objects, resize/rotate, free draw) -->
+  <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
+
   <!-- jsPDF (PDF export) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
     :root{
-      --bg:#0b0b0f;
-      --panel:#12121a;
-      --panel2:#171724;
-      --text:#f2f2f2;
-      --muted:#b8b8c7;
+      --bg: #0b0b0e;
+      --panel: #111116;
+      --panel2:#15151c;
+      --line: #262630;
+      --text: #f5f5f7;
+      --muted:#b8b8c2;
       --accent:#ffd400;
-      --border: rgba(255,255,255,.10);
-      --shadow: 0 10px 30px rgba(0,0,0,.45);
-      --radius: 14px;
+      --accent2:#ffea61;
+      --danger:#ff4d4d;
     }
 
     *{ box-sizing:border-box; }
-    html,body{ height:100%; }
     body{
       margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 20% 0%, #141427, var(--bg));
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background: radial-gradient(1200px 800px at 20% 0%, #15151f 0%, var(--bg) 55%) fixed;
       color: var(--text);
-    }
-
-    .wrap{
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 14px;
-      padding-bottom: 32px;
     }
 
     header{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding: 14px 14px 10px;
-      background: linear-gradient(180deg, rgba(255,212,0,.10), rgba(255,212,0,0));
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #0f0f14 0%, #0b0b0e 100%);
+      position: sticky;
+      top:0;
+      z-index:10;
     }
 
     .brand{
-      display:flex; align-items:center; gap:12px;
-      min-width: 0;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
     }
     .logo{
-      width:42px; height:42px;
-      border-radius: 12px;
-      background: rgba(255,212,0,.16);
-      border: 1px solid rgba(255,212,0,.35);
-      display:grid; place-items:center;
-      flex: 0 0 auto;
+      width:34px;height:34px;border-radius:10px;
+      background: linear-gradient(135deg, var(--accent) 0%, #b99600 100%);
+      display:grid;place-items:center;
+      color:#0b0b0e;
+      font-weight: 900;
+      box-shadow: 0 10px 26px rgba(255,212,0,.18);
+      user-select:none;
     }
-    .logo svg{ width:24px; height:24px; fill: var(--accent); }
-
-    h1{
+    .titlewrap{ display:flex; flex-direction:column; line-height:1.1; }
+    .title{
       margin:0;
-      font-size: 18px;
-      letter-spacing:.3px;
-      line-height:1.1;
-      white-space: nowrap;
-      overflow:hidden;
-      text-overflow: ellipsis;
+      font-size: 16px;
+      letter-spacing:.2px;
+      font-weight: 800;
     }
-    .sub{
-      margin:2px 0 0;
-      color: var(--muted);
+    .subtitle{
+      margin:0;
       font-size: 12px;
-      white-space: nowrap;
-      overflow:hidden;
-      text-overflow: ellipsis;
+      color: var(--muted);
     }
 
-    .topActions{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-
-    .pill{
-      display:flex; align-items:center; gap:8px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-size: 13px;
+    .container{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      padding: 12px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
     .panel{
-      margin-top: 12px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      background: rgba(17,17,22,.85);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.35);
       overflow:hidden;
     }
 
     .toolbar{
-      padding: 10px;
       display:flex;
       gap:10px;
-      flex-wrap:wrap;
+      padding: 12px;
+      flex-wrap: wrap;
       align-items:center;
-      justify-content:space-between;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0));
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(21,21,28,.9) 0%, rgba(17,17,22,.85) 100%);
     }
 
-    .toolGroup{
+    .group{
       display:flex;
       gap:8px;
-      flex-wrap:wrap;
       align-items:center;
+      flex-wrap:wrap;
+      padding: 6px 8px;
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 12px;
+      background: rgba(255,255,255,.03);
     }
 
     .label{
       font-size:12px;
       color: var(--muted);
-      margin-right: 6px;
+      margin-right: 2px;
     }
 
     button, select, input[type="color"]{
-      font: inherit;
-    }
-
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.06);
+      appearance:none;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
       color: var(--text);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-weight: 650;
+      letter-spacing:.1px;
       cursor:pointer;
-      user-select:none;
-      transition: transform .05s ease, background .15s ease, border-color .15s ease;
-      touch-action: manipulation;
+      transition: transform .04s ease, background .15s ease, border-color .15s ease;
+      font-size: 13px;
     }
-    .btn:hover{ background: rgba(255,255,255,.10); }
-    .btn:active{ transform: translateY(1px); }
-    .btn svg{ width:18px; height:18px; fill: currentColor; opacity:.95; }
-
-    .btn.primary{
-      background: rgba(255,212,0,.18);
-      border-color: rgba(255,212,0,.35);
-      color: #fff;
+    button:hover, select:hover{
+      border-color: rgba(255,212,0,.55);
+      background: rgba(255,212,0,.08);
     }
-    .btn.primary:hover{ background: rgba(255,212,0,.25); }
-
-    .btn.on{
-      outline: 2px solid rgba(255,212,0,.55);
-      outline-offset: 0px;
-      border-color: rgba(255,212,0,.50);
+    button:active{ transform: translateY(1px); }
+    button.primary{
+      background: rgba(255,212,0,.14);
+      border-color: rgba(255,212,0,.65);
+      color: var(--accent2);
     }
-
-    .btn.danger{
-      background: rgba(255,40,40,.13);
-      border-color: rgba(255,40,40,.25);
+    button.danger{
+      border-color: rgba(255,77,77,.6);
+      background: rgba(255,77,77,.08);
     }
-    .btn.danger:hover{
-      background: rgba(255,40,40,.18);
-      border-color: rgba(255,40,40,.35);
+    button.active{
+      outline: 2px solid rgba(255,212,0,.45);
+      border-color: rgba(255,212,0,.8);
+      background: rgba(255,212,0,.12);
     }
 
-    .select, .color{
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      min-height: 42px;
-    }
-    select.select{
-      appearance: none;
+    select{
+      padding-right: 28px;
       background-image:
         linear-gradient(45deg, transparent 50%, var(--muted) 50%),
         linear-gradient(135deg, var(--muted) 50%, transparent 50%);
       background-position:
-        calc(100% - 16px) calc(1em + 2px),
-        calc(100% - 11px) calc(1em + 2px);
+        calc(100% - 16px) 55%,
+        calc(100% - 11px) 55%;
       background-size: 5px 5px, 5px 5px;
-      background-repeat: no-repeat;
-      padding-right: 32px;
+      background-repeat:no-repeat;
     }
 
-    .stageWrap{
-      padding: 12px;
-      background: var(--panel2);
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      font-size:12px;
+      color: var(--muted);
     }
 
-    .stageCard{
-      border-radius: 16px;
-      border: 1px solid var(--border);
-      overflow:hidden;
-      background: #0d0f18;
+    .canvasWrap{
+      padding: 10px;
     }
 
-    /* Responsive stage sizing */
-    #stageHost{
-      width: 100%;
-      height: min(70vh, 720px);
+    canvas{
+      width:100%;
+      height:auto;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: #0a0a0d;
+      touch-action: none; /* mobile */
     }
 
-    /* Notes */
     .notes{
       padding: 12px;
-      border-top: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+      border-top: 1px solid var(--line);
+      background: rgba(15,15,20,.55);
     }
-    .notes h2{
-      margin: 0 0 8px;
-      font-size: 14px;
+    .notes h3{
+      margin:0 0 8px 0;
+      font-size: 13px;
       letter-spacing:.2px;
-      color: var(--accent);
+      color: var(--accent2);
     }
     textarea{
-      width: 100%;
-      min-height: 110px;
+      width:100%;
+      min-height: 120px;
       resize: vertical;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.06);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
       color: var(--text);
-      outline: none;
+      padding: 10px 12px;
+      font-size: 13px;
       line-height: 1.35;
+      outline:none;
     }
-    textarea::placeholder{ color: rgba(255,255,255,.40); }
+    textarea:focus{
+      border-color: rgba(255,212,0,.55);
+      box-shadow: 0 0 0 3px rgba(255,212,0,.12);
+    }
 
-    .hintRow{
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 12px;
+    .exportRow{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
-    }
-    .kbd{
-      padding: 2px 8px;
-      border: 1px solid var(--border);
-      border-bottom-color: rgba(255,255,255,.18);
-      border-radius: 8px;
-      background: rgba(0,0,0,.25);
-      color: rgba(255,255,255,.85);
+      align-items:center;
+      justify-content:flex-start;
+      margin-top: 10px;
     }
 
-    /* Mobile tweaks */
-    @media (max-width: 640px){
-      .wrap{ padding: 10px; }
-      header{ padding: 12px; }
-      .btn{ padding: 10px 10px; }
-      #stageHost{ height: 62vh; }
-      .sub{ display:none; }
+    .smallhint{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height:1.35;
     }
 
-    /* Editable textarea overlay for Konva text editing */
-    .konva-textarea{
-      position:absolute;
-      z-index: 50;
-      border: 1px solid rgba(255,212,0,.45);
-      border-radius: 10px;
-      padding: 8px 10px;
-      outline: none;
-      background: rgba(0,0,0,.86);
-      color: #fff;
-      font: 600 18px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      line-height: 1.2;
-      box-shadow: 0 12px 32px rgba(0,0,0,.55);
+    /* Mobile friendliness */
+    @media (max-width: 720px){
+      .toolbar{ gap:8px; padding:10px; }
+      button, select{ padding: 10px 10px; font-size: 13px; }
+      .group{ width: 100%; justify-content:flex-start; }
+      header{ position: static; }
     }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <header>
-      <div class="brand">
-        <div class="logo" aria-hidden="true">
-          <!-- small grid icon -->
-          <svg viewBox="0 0 24 24">
-            <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z"/>
-          </svg>
-        </div>
-        <div style="min-width:0">
-          <h1>TactiGrid Drill Designer</h1>
-          <div class="sub">Design drills fast: place equipment, draw movements, export PNG/PDF.</div>
-        </div>
+<header>
+  <div class="brand">
+    <div class="logo">TG</div>
+    <div class="titlewrap">
+      <h1 class="title">TactiGrid Drill Designer</h1>
+      <p class="subtitle">Build drills fast: add equipment, draw lines, export to PNG/PDF</p>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="panel">
+    <div class="toolbar">
+
+      <div class="group">
+        <span class="label">Pitch</span>
+        <select id="pitchType">
+          <option value="full">Full pitch</option>
+          <option value="half">Half pitch</option>
+          <option value="blank">Blank</option>
+        </select>
       </div>
 
-      <div class="topActions">
-        <div class="pill">
-          <span style="color:var(--accent);font-weight:700">Mode</span>
-          <span id="modeLabel">Add</span>
-        </div>
-      </div>
-    </header>
+      <div class="group">
+        <span class="label">Mode</span>
+        <button id="editBtn" class="primary" title="Edit / Select (pencil)">✏️ Edit</button>
 
-    <div class="panel">
-      <div class="toolbar">
-        <!-- Left: Pitch + Edit mode -->
-        <div class="toolGroup">
-          <span class="label">Pitch</span>
-          <select id="pitchType" class="select" title="Pitch type">
-            <option value="full">Full pitch</option>
-            <option value="half">Half pitch</option>
-            <option value="blank">Blank</option>
+        <span class="pill" title="Add objects dropdown then tap/click on the pitch to place">
+          ➕ Add Objects:
+          <select id="addObjectSelect">
+            <option value="">Select…</option>
+            <option value="player">Player</option>
+            <option value="ball">Ball</option>
+            <option value="cone">Cone</option>
+            <option value="goal">Goal</option>
+            <option value="mannequin">Mannequin</option>
+            <option value="pole">Pole</option>
+            <option value="flag">Flag</option>
+            <option value="text">Text</option>
           </select>
-
-          <button id="editBtn" class="btn primary" title="Select/Edit tool">
-            <!-- pencil -->
-            <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm2.92 2.83H5v-.92l8.06-8.06.92.92L5.92 20.08zM20.71 7.04a1.003 1.003 0 0 0 0-1.42L18.37 3.29a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.83z"/></svg>
-            Edit
-          </button>
-
-          <button id="deleteBtn" class="btn danger" title="Delete selected">
-            <!-- trash -->
-            <svg viewBox="0 0 24 24"><path d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2z"/></svg>
-            Delete
-          </button>
-        </div>
-
-        <!-- Middle: Add equipment -->
-        <div class="toolGroup">
-          <span class="label">Add</span>
-
-          <button class="btn" data-add="player" title="Add player">
-            <!-- circle -->
-            <svg viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z"/></svg>
-            Player
-          </button>
-
-          <button class="btn" data-add="ball" title="Add ball">
-            <!-- ball -->
-            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.4 6.2-2.9-.7-1.3-2.7 2.5-1.3c.7.6 1.3 1.3 1.7 2.1zM7.8 4.7 6.5 7.4 3.6 8.1c.4-.8 1-1.5 1.7-2.1l2.5 1.3zM3 12c0-.5 0-1 .1-1.4l3.1-.8 2 2-1.1 3-2.9 1c-.8-1.2-1.2-2.6-1.2-3.8zm9 7c-1.5 0-2.8-.4-3.9-1.2l1-2.9 3-1.1 3 1.1 1 2.9c-1.1.8-2.4 1.2-3.9 1.2zm7.1-3.2-2.9-1-1.1-3 2-2 3.1.8c.1.5.1.9.1 1.4 0 1.2-.4 2.6-1.2 3.8z"/></svg>
-            Ball
-          </button>
-
-          <button class="btn" data-add="cone" title="Add cone">
-            <!-- cone -->
-            <svg viewBox="0 0 24 24"><path d="M12 3 4 21h16L12 3zm0 4.9L17.3 19H6.7L12 7.9z"/></svg>
-            Cone
-          </button>
-
-          <button class="btn" data-add="goal" title="Add goal">
-            <!-- classic goal -->
-            <svg viewBox="0 0 24 24"><path d="M4 6h16v14h-2V8H6v12H4V6zm4 6h8v2H8v-2zm0 4h8v2H8v-2z"/></svg>
-            Goal
-          </button>
-
-          <button class="btn" data-add="mannequin" title="Add mannequin">
-            <!-- mannequin -->
-            <svg viewBox="0 0 24 24"><path d="M12 3c2.2 0 4 1.8 4 4 0 1.2-.5 2.2-1.3 3h.3c1.7 0 3 1.3 3 3v8h-2v-8c0-.6-.4-1-1-1H9c-.6 0-1 .4-1 1v8H6v-8c0-1.7 1.3-3 3-3h.3C8.5 9.2 8 8.2 8 7c0-2.2 1.8-4 4-4zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-            Mannequin
-          </button>
-
-          <button class="btn" data-add="pole" title="Add pole">
-            <!-- pole -->
-            <svg viewBox="0 0 24 24"><path d="M11 2h2v20h-2V2zm-4 4h2v2H7V6zm8 0h2v2h-2V6z"/></svg>
-            Pole
-          </button>
-
-          <button class="btn" data-add="flag" title="Add flag">
-            <!-- improved flag -->
-            <svg viewBox="0 0 24 24">
-              <path d="M6 2h2v20H6V2z"/>
-              <path d="M8 3c3 0 4 2 7 2 1.4 0 2.7-.4 3-.5v9c-.3.1-1.6.5-3 .5-3 0-4-2-7-2v-9z"/>
-              <path d="M8 12c3 0 4 2 7 2 1.4 0 2.7-.4 3-.5" opacity=".35"/>
-            </svg>
-            Flag
-          </button>
-
-          <button class="btn" data-add="text" title="Add text">
-            <!-- T -->
-            <svg viewBox="0 0 24 24"><path d="M5 4h14v3h-5v13h-4V7H5V4z"/></svg>
-            Text
-          </button>
-        </div>
-
-        <!-- Right: Lines + color + export -->
-        <div class="toolGroup">
-          <span class="label">Lines</span>
-          <select id="lineType" class="select" title="Line type">
-            <option value="none">Off</option>
-            <option value="straight">Straight</option>
-            <option value="arrow">Arrow</option>
-            <option value="dashed">Dashed</option>
-            <option value="curved">Curved</option>
-          </select>
-
-          <input id="strokeColor" class="color" type="color" value="#ffd400" title="Line/object colour" />
-
-          <button id="undoBtn" class="btn" title="Undo">
-            <svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7c3.3 0 6 2.7 6 6 0 1.1-.3 2.1-.8 3l1.8 1C19.6 15.9 20 14.5 20 13c0-4.4-3.6-8-8-8z"/></svg>
-            Undo
-          </button>
-
-          <button id="clearBtn" class="btn danger" title="Clear all">
-            <svg viewBox="0 0 24 24"><path d="M6 7h12v14H6V7zm3-4h6l1 2H8l1-2z"/></svg>
-            Clear
-          </button>
-
-          <button id="pngBtn" class="btn primary" title="Export PNG">
-            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 15l2.5-3.2 1.8 2.2L14 10l3 5H7z"/></svg>
-            PNG
-          </button>
-
-          <button id="pdfBtn" class="btn primary" title="Export PDF (includes notes)">
-            <svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2zm8 1.5V8h4.5L14 3.5zM7 13h10v2H7v-2zm0 4h10v2H7v-2zm0-8h6v2H7V9z"/></svg>
-            PDF
-          </button>
-        </div>
+        </span>
       </div>
 
-      <div class="stageWrap">
-        <div class="stageCard">
-          <div id="stageHost"></div>
-          <div class="notes">
-            <h2>Session Notes</h2>
-            <textarea id="notesArea" placeholder="Write your coaching points, constraints, targets, progressions, etc..."></textarea>
-            <div class="hintRow">
-              <span><span class="kbd">Edit</span> mode: drag, resize, rotate, select.</span>
-              <span><span class="kbd">Double-click/tap</span> text to edit.</span>
-              <span><span class="kbd">Lines</span>: choose type, then draw on the pitch.</span>
-            </div>
-          </div>
-        </div>
+      <div class="group">
+        <span class="label">Lines</span>
+        <button id="lineStraightBtn" title="Straight line">／</button>
+        <button id="lineArrowBtn" title="Arrow line">➡️</button>
+        <button id="lineDashedBtn" title="Dashed line">- -</button>
+        <button id="lineCurvedBtn" title="Curved line">〰️</button>
+        <button id="freeDrawBtn" title="Free draw">✍️</button>
+        <input id="colorPicker" type="color" value="#ffd400" title="Line/shape color" />
+      </div>
+
+      <div class="group">
+        <span class="label">Actions</span>
+        <button id="undoBtn" title="Undo (Ctrl/Cmd+Z)">↶ Undo</button>
+        <button id="redoBtn" title="Redo (Ctrl/Cmd+Y)">↷ Redo</button>
+        <button id="clearBtn" class="danger" title="Clear canvas">🗑 Clear</button>
+      </div>
+
+      <div class="group">
+        <span class="label">Tip</span>
+        <span class="pill">Double-click text to edit • Pinch/zoom via browser • Drag corners to resize</span>
+      </div>
+    </div>
+
+    <div class="canvasWrap">
+      <canvas id="c" width="1400" height="820"></canvas>
+    </div>
+
+    <div class="notes">
+      <h3>Notes</h3>
+      <textarea id="notes" placeholder="Session notes… (these will be included in PDF export)"></textarea>
+
+      <div class="exportRow">
+        <button id="exportPngBtn" class="primary" title="Export PNG">🖼 Export PNG</button>
+        <button id="exportPdfBtn" class="primary" title="Export PDF (includes notes + branding)">📄 Export PDF</button>
+      </div>
+
+      <div class="smallhint">
+        Export PNG includes the pitch + all objects/lines in color. Export PDF adds TactiGrid branding plus your notes.
       </div>
     </div>
   </div>
+</div>
 
 <script>
-(() => {
-  // ---------- Helpers ----------
-  const $ = (id) => document.getElementById(id);
+  // -----------------------
+  // SVG Pitch backgrounds
+  // -----------------------
+  const pitchSVG_full = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0c6a3c"/>
+        <stop offset="1" stop-color="#09502d"/>
+      </linearGradient>
+      <pattern id="stripes" width="200" height="820" patternUnits="userSpaceOnUse">
+        <rect width="200" height="820" fill="rgba(255,255,255,0.04)"/>
+        <rect x="100" width="100" height="820" fill="rgba(0,0,0,0.06)"/>
+      </pattern>
+    </defs>
+    <rect width="1400" height="820" fill="url(#g)"/>
+    <rect width="1400" height="820" fill="url(#stripes)"/>
+    <rect x="60" y="60" width="1280" height="700" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <line x1="700" y1="60" x2="700" y2="760" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <circle cx="700" cy="410" r="90" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <circle cx="700" cy="410" r="3" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="220" cy="410" r="3" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="1180" cy="410" r="3" fill="rgba(255,255,255,0.8)"/>
+    <rect x="60" y="250" width="170" height="320" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <rect x="60" y="320" width="60" height="180" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <rect x="1170" y="250" width="170" height="320" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <rect x="1280" y="320" width="60" height="180" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <path d="M 230 320 A 90 90 0 0 1 230 500" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <path d="M 1170 320 A 90 90 0 0 0 1170 500" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <path d="M 60 150 A 60 60 0 0 1 120 60" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <path d="M 1340 60 A 60 60 0 0 1 1340 120" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <path d="M 1340 760 A 60 60 0 0 1 1280 760" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <path d="M 60 760 A 60 60 0 0 1 60 700" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+  </svg>`;
 
-  function downloadDataUrl(dataUrl, filename){
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  // Half pitch (attacking half) – FIXED
+  const pitchSVG_half = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820">
+    <defs>
+      <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0c6a3c"/>
+        <stop offset="1" stop-color="#09502d"/>
+      </linearGradient>
+      <pattern id="stripes2" width="200" height="820" patternUnits="userSpaceOnUse">
+        <rect width="200" height="820" fill="rgba(255,255,255,0.04)"/>
+        <rect x="100" width="100" height="820" fill="rgba(0,0,0,0.06)"/>
+      </pattern>
+    </defs>
+    <rect width="1400" height="820" fill="url(#g2)"/>
+    <rect width="1400" height="820" fill="url(#stripes2)"/>
+
+    <!-- Half pitch boundary -->
+    <rect x="60" y="60" width="1280" height="700" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <!-- Midline -->
+    <line x1="700" y1="60" x2="700" y2="760" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+
+    <!-- Use RIGHT HALF (attacking half) markings -->
+    <circle cx="700" cy="410" r="90" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <circle cx="700" cy="410" r="3" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="1180" cy="410" r="3" fill="rgba(255,255,255,0.8)"/>
+
+    <rect x="1170" y="250" width="170" height="320" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <rect x="1280" y="320" width="60" height="180" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <path d="M 1170 320 A 90 90 0 0 0 1170 500" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+
+    <path d="M 1340 60 A 60 60 0 0 1 1340 120" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+    <path d="M 1340 760 A 60 60 0 0 1 1280 760" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="4"/>
+  </svg>`;
+
+  const pitchSVG_blank = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820">
+    <rect width="1400" height="820" fill="#0a0a0d"/>
+  </svg>`;
+
+  function svgToDataUrl(svg){
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.trim());
   }
 
-  function wrapTextToWidth(doc, text, maxWidth){
-    // Simple word wrap for jsPDF
-    const words = (text || '').split(/\s+/);
-    const lines = [];
-    let line = '';
-    for (const w of words){
-      const test = line ? (line + ' ' + w) : w;
-      if (doc.getTextWidth(test) > maxWidth){
-        if (line) lines.push(line);
-        line = w;
-      } else {
-        line = test;
+  // -----------------------
+  // Icon SVGs (good-looking)
+  // -----------------------
+  const ICONS = {
+    player: `
+      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
+        <defs>
+          <radialGradient id="pg" cx="35%" cy="30%" r="70%">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+            <stop offset="1" stop-color="#000000" stop-opacity="0.25"/>
+          </radialGradient>
+        </defs>
+        <circle cx="45" cy="45" r="28" fill="currentColor"/>
+        <circle cx="45" cy="45" r="28" fill="url(#pg)"/>
+        <circle cx="45" cy="45" r="3" fill="rgba(255,255,255,0.75)"/>
+      </svg>`,
+
+    // Football-looking icon
+    ball: `
+      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
+        <circle cx="45" cy="45" r="26" fill="#f4f4f6" stroke="rgba(0,0,0,0.45)" stroke-width="3"/>
+        <polygon points="45,28 55,35 51,47 39,47 35,35" fill="#111116"/>
+        <path d="M35 35 L26 39 L28 50 L39 47" fill="#111116"/>
+        <path d="M55 35 L64 39 L62 50 L51 47" fill="#111116"/>
+        <path d="M28 50 L36 60 L45 57 L39 47" fill="#111116"/>
+        <path d="M62 50 L54 60 L45 57 L51 47" fill="#111116"/>
+        <circle cx="45" cy="45" r="26" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+      </svg>`,
+
+    cone: `
+      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
+        <path d="M45 16 L66 68 H24 Z" fill="currentColor"/>
+        <rect x="22" y="66" width="46" height="10" rx="3" fill="rgba(0,0,0,0.25)"/>
+        <path d="M38 34 H52" stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-linecap="round"/>
+      </svg>`,
+
+    // Goal like v1: clear goal frame + net
+    goal: `
+      <svg xmlns="http://www.w3.org/2000/svg" width="140" height="90" viewBox="0 0 140 90">
+        <rect x="14" y="20" width="112" height="50" fill="none" stroke="currentColor" stroke-width="6"/>
+        <line x1="14" y1="70" x2="30" y2="84" stroke="currentColor" stroke-width="6"/>
+        <line x1="126" y1="70" x2="110" y2="84" stroke="currentColor" stroke-width="6"/>
+        <line x1="30" y1="84" x2="110" y2="84" stroke="currentColor" stroke-width="6"/>
+        <!-- net -->
+        <g stroke="rgba(255,255,255,0.45)" stroke-width="2">
+          <line x1="24" y1="28" x2="24" y2="78"/>
+          <line x1="40" y1="28" x2="40" y2="80"/>
+          <line x1="56" y1="28" x2="56" y2="82"/>
+          <line x1="72" y1="28" x2="72" y2="82"/>
+          <line x1="88" y1="28" x2="88" y2="82"/>
+          <line x1="104" y1="28" x2="104" y2="80"/>
+          <line x1="120" y1="28" x2="120" y2="78"/>
+          <line x1="18" y1="38" x2="122" y2="38"/>
+          <line x1="18" y1="52" x2="122" y2="52"/>
+          <line x1="18" y1="66" x2="122" y2="66"/>
+        </g>
+      </svg>`,
+
+    mannequin: `
+      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="140" viewBox="0 0 90 140">
+        <path d="M45 12
+                 C55 12 62 20 62 30
+                 C62 42 54 48 45 48
+                 C36 48 28 42 28 30
+                 C28 20 35 12 45 12 Z"
+              fill="rgba(255,255,255,0.22)"/>
+        <path d="M24 52
+                 Q45 40 66 52
+                 L70 120
+                 Q45 134 20 120 Z"
+              fill="currentColor"/>
+        <path d="M30 62 Q45 56 60 62" stroke="rgba(255,255,255,0.55)" stroke-width="4" fill="none" stroke-linecap="round"/>
+      </svg>`,
+
+    pole: `
+      <svg xmlns="http://www.w3.org/2000/svg" width="60" height="140" viewBox="0 0 60 140">
+        <rect x="26" y="12" width="8" height="112" rx="4" fill="currentColor"/>
+        <rect x="16" y="118" width="28" height="10" rx="4" fill="rgba(0,0,0,0.25)"/>
+        <circle cx="30" cy="20" r="6" fill="rgba(255,255,255,0.25)"/>
+      </svg>`,
+
+    // Better flag: pole + triangular cloth with crease
+    flag: `
+      <svg xmlns="http://www.w3.org/2000/svg" width="90" height="140" viewBox="0 0 90 140">
+        <rect x="22" y="10" width="8" height="120" rx="4" fill="currentColor"/>
+        <path d="M30 18 L72 30 L30 46 Z" fill="rgba(255,255,255,0.22)"/>
+        <path d="M30 18 L70 30 L30 46 Z" fill="currentColor"/>
+        <path d="M30 18 Q50 28 30 46" stroke="rgba(0,0,0,0.22)" stroke-width="3" fill="none"/>
+        <rect x="14" y="124" width="24" height="10" rx="4" fill="rgba(0,0,0,0.25)"/>
+      </svg>`
+  };
+
+  function svgIconDataUrl(svg){
+    // Uses currentColor in SVG; Fabric will apply tint by setting 'fill' on SVG elements when we load.
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.trim());
+  }
+
+  // -----------------------
+  // Fabric canvas setup
+  // -----------------------
+  const canvas = new fabric.Canvas('c', {
+    preserveObjectStacking: true,
+    selection: true
+  });
+
+  // Better touch / mobile selection
+  canvas.on('touch:gesture', function(){});
+  canvas.on('touch:drag', function(){});
+  canvas.on('touch:orientation', function(){});
+  canvas.on('touch:shake', function(){});
+
+  let currentColor = document.getElementById('colorPicker').value;
+  let mode = 'edit'; // edit | add | lineStraight | lineArrow | lineDashed | lineCurved | freeDraw
+  let addType = '';
+  let isDrawingLine = false;
+  let lineTemp = null;
+  let lineStart = null;
+
+  // Undo/redo history
+  const history = [];
+  let historyIndex = -1;
+  const MAX_HISTORY = 80;
+
+  function pushHistory(){
+    const json = canvas.toDatalessJSON(['selectable','evented','name','tgType']);
+    // trim any redo states
+    history.splice(historyIndex + 1);
+    history.push(json);
+    if(history.length > MAX_HISTORY) history.shift();
+    historyIndex = history.length - 1;
+  }
+
+  function loadHistory(idx){
+    const state = history[idx];
+    if(!state) return;
+    canvas.loadFromJSON(state, () => {
+      applyPitch(currentPitch); // ensure pitch stays
+      canvas.renderAll();
+    });
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    const z = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z';
+    const y = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y';
+    if(z){
+      e.preventDefault();
+      undo();
+    }
+    if(y){
+      e.preventDefault();
+      redo();
+    }
+    if(e.key === 'Delete' || e.key === 'Backspace'){
+      const active = canvas.getActiveObjects();
+      if(active && active.length){
+        active.forEach(o => canvas.remove(o));
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+        pushHistory();
       }
     }
-    if (line) lines.push(line);
-    return lines;
-  }
-
-  // ---------- Konva setup ----------
-  const host = $('stageHost');
-
-  // Logical canvas size (we scale to fit host)
-  const LOGICAL_W = 1200;
-  const LOGICAL_H = 700;
-
-  const stage = new Konva.Stage({
-    container: host,
-    width: host.clientWidth,
-    height: host.clientHeight
   });
 
-  // Layers
-  const bgLayer = new Konva.Layer();
-  const drawLayer = new Konva.Layer();
-  stage.add(bgLayer);
-  stage.add(drawLayer);
+  // -----------------------
+  // Pitch handling
+  // -----------------------
+  let currentPitch = 'full';
 
-  // A background rect so export ALWAYS has a solid base
-  const bgBase = new Konva.Rect({ x:0, y:0, width: LOGICAL_W, height: LOGICAL_H, fill: '#0f6d3f' });
-  bgLayer.add(bgBase);
+  function applyPitch(type){
+    currentPitch = type;
+    let url = svgToDataUrl(pitchSVG_full);
+    if(type === 'half') url = svgToDataUrl(pitchSVG_half);
+    if(type === 'blank') url = svgToDataUrl(pitchSVG_blank);
 
-  // Pitch groups
-  const pitchGroup = new Konva.Group({ x:0, y:0 });
-  bgLayer.add(pitchGroup);
+    fabric.Image.fromURL(url, (img) => {
+      // scale to canvas size exactly
+      img.set({
+        originX:'left',
+        originY:'top',
+        selectable:false,
+        evented:false
+      });
+      img.scaleToWidth(canvas.getWidth());
+      img.scaleToHeight(canvas.getHeight());
+      canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+    }, { crossOrigin: 'anonymous' });
+  }
 
-  // Selection Transformer (resize/rotate)
-  const transformer = new Konva.Transformer({
-    rotateEnabled: true,
-    enabledAnchors: ['top-left','top-right','bottom-left','bottom-right','middle-left','middle-right','top-center','bottom-center'],
-    anchorSize: 12,
-    borderStroke: 'rgba(255,212,0,.85)',
-    anchorStroke: 'rgba(255,212,0,.85)',
-    anchorFill: 'rgba(0,0,0,.9)',
-    anchorCornerRadius: 8,
-    borderDash: [6, 4],
-    keepRatio: false
+  // Initialize pitch
+  applyPitch('full');
+
+  document.getElementById('pitchType').addEventListener('change', (e) => {
+    applyPitch(e.target.value);
   });
-  drawLayer.add(transformer);
 
-  // History for Undo
-  let history = [];
-  let historyIndex = -1;
-
-  function saveHistory(){
-    // We store JSON of drawLayer only (bg is deterministic by pitch type)
-    const snap = {
-      pitch: $('pitchType').value,
-      draw: drawLayer.toJSON()
-    };
-    // truncate forward
-    history = history.slice(0, historyIndex + 1);
-    history.push(snap);
-    historyIndex++;
+  // Keep pitch correct on resize (responsive)
+  function resizeCanvasToContainer(){
+    const wrapper = document.querySelector('.canvasWrap');
+    const panel = wrapper.getBoundingClientRect();
+    // Maintain aspect ratio close to 1400x820 (~1.707)
+    const targetW = Math.min(panel.width - 2, 1200);
+    const targetH = Math.round(targetW / 1.707);
+    canvas.setWidth(Math.max(320, targetW));
+    canvas.setHeight(Math.max(220, targetH));
+    applyPitch(currentPitch);
+    canvas.renderAll();
   }
 
-  function restoreHistory(idx){
-    const snap = history[idx];
-    if (!snap) return;
-    $('pitchType').value = snap.pitch;
-    drawPitch(snap.pitch);
+  window.addEventListener('resize', () => {
+    // keep objects positions relative? We keep it simple: don't rescale objects automatically.
+    // If you want auto-rescale later, we can implement.
+    resizeCanvasToContainer();
+  });
 
-    // Destroy all nodes except transformer, then recreate from JSON
-    const keep = transformer;
-    transformer.nodes([]);
+  // Run once on load for mobile fitting
+  resizeCanvasToContainer();
 
-    drawLayer.destroyChildren();
-    drawLayer.add(keep);
-
-    const newLayer = Konva.Node.create(snap.draw, stage);
-    // newLayer is a Layer-like node. We want its children (excluding its own transformer if any).
-    const kids = newLayer.getChildren();
-    kids.forEach(n => {
-      if (n.className !== 'Transformer') drawLayer.add(n);
-    });
-    newLayer.destroy();
-
-    // Re-attach selection events
-    attachNodeBehavioursToAll();
-
-    drawLayer.batchDraw();
-    bgLayer.batchDraw();
-    updateModeUI();
-  }
-
-  function undo(){
-    if (historyIndex <= 0) return;
-    historyIndex--;
-    restoreHistory(historyIndex);
-  }
-
-  // ---------- Mode & Tools ----------
-  let mode = 'add'; // 'add' or 'edit'
-  let addType = 'player';
-  let lineType = 'none';
-  let strokeColor = $('strokeColor').value;
+  // -----------------------
+  // Mode controls
+  // -----------------------
+  const editBtn = document.getElementById('editBtn');
+  const addSelect = document.getElementById('addObjectSelect');
 
   function setMode(newMode){
     mode = newMode;
-    transformer.nodes([]);
-    updateModeUI();
-    // toggle draggability based on mode
-    drawLayer.getChildren().forEach(node => {
-      if (node === transformer) return;
-      if (node.getAttr('isDrawable') === true) return; // lines are not draggable
-      node.draggable(mode === 'edit');
+
+    // Button active states
+    const btns = [
+      ['lineStraightBtn','lineStraight'],
+      ['lineArrowBtn','lineArrow'],
+      ['lineDashedBtn','lineDashed'],
+      ['lineCurvedBtn','lineCurved'],
+      ['freeDrawBtn','freeDraw']
+    ];
+    btns.forEach(([id, m]) => document.getElementById(id).classList.toggle('active', mode===m));
+    editBtn.classList.toggle('active', mode==='edit');
+
+    // Fabric selection toggle
+    const isEdit = (mode === 'edit');
+    canvas.isDrawingMode = (mode === 'freeDraw');
+
+    if(canvas.isDrawingMode){
+      canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+      canvas.freeDrawingBrush.color = currentColor;
+      canvas.freeDrawingBrush.width = 4;
+    }
+
+    canvas.selection = isEdit;
+    canvas.forEachObject(o => {
+      if(o === canvas.backgroundImage) return;
+      o.selectable = isEdit;
+      o.evented = isEdit;
     });
-    drawLayer.batchDraw();
+
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
   }
 
-  function updateModeUI(){
-    $('modeLabel').textContent = (mode === 'edit') ? 'Edit' : 'Add';
-    $('editBtn').classList.toggle('on', mode === 'edit');
-  }
-
-  $('editBtn').addEventListener('click', () => {
-    setMode(mode === 'edit' ? 'add' : 'edit');
+  editBtn.addEventListener('click', () => {
+    setMode('edit');
+    addSelect.value = '';
+    addType = '';
   });
 
-  $('strokeColor').addEventListener('input', (e) => {
-    strokeColor = e.target.value;
-  });
-
-  $('lineType').addEventListener('change', (e) => {
-    lineType = e.target.value;
-    // drawing lines implies add mode (so you don't accidentally select)
-    if (lineType !== 'none') setMode('add');
-  });
-
-  // Add buttons
-  document.querySelectorAll('[data-add]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      addType = btn.getAttribute('data-add');
-      // if they choose to add equipment, switch to add mode
+  addSelect.addEventListener('change', (e) => {
+    addType = e.target.value;
+    if(addType){
       setMode('add');
-      // turn off line drawing unless user wants it
-      $('lineType').value = 'none';
-      lineType = 'none';
-      // UI highlight
-      document.querySelectorAll('[data-add]').forEach(b => b.classList.remove('on'));
-      btn.classList.add('on');
-    });
+      // keep edit button not active
+      editBtn.classList.remove('active');
+    } else {
+      setMode('edit');
+    }
   });
 
-  // default highlight
-  document.querySelector('[data-add="player"]').classList.add('on');
+  // Line buttons
+  document.getElementById('lineStraightBtn').addEventListener('click', () => setMode('lineStraight'));
+  document.getElementById('lineArrowBtn').addEventListener('click', () => setMode('lineArrow'));
+  document.getElementById('lineDashedBtn').addEventListener('click', () => setMode('lineDashed'));
+  document.getElementById('lineCurvedBtn').addEventListener('click', () => setMode('lineCurved'));
+  document.getElementById('freeDrawBtn').addEventListener('click', () => setMode('freeDraw'));
 
-  // ---------- Pitch drawing ----------
-  function clearPitch(){
-    pitchGroup.destroyChildren();
-  }
-
-  function drawFullPitchLines(){
-    // white pitch lines
-    const W = LOGICAL_W, H = LOGICAL_H;
-    const pad = 40;
-    const line = (shape) => { shape.stroke('white'); shape.strokeWidth(3); shape.opacity(0.95); return shape; };
-
-    // Outer boundary
-    pitchGroup.add(line(new Konva.Rect({ x:pad, y:pad, width: W-2*pad, height: H-2*pad, fillEnabled:false })));
-
-    // Halfway line
-    pitchGroup.add(line(new Konva.Line({ points:[W/2, pad, W/2, H-pad] })));
-
-    // Center circle + spot
-    pitchGroup.add(line(new Konva.Circle({ x:W/2, y:H/2, radius: 90 })));
-    pitchGroup.add(new Konva.Circle({ x:W/2, y:H/2, radius: 4, fill:'white', opacity:0.95 }));
-
-    // Penalty areas + 6-yard boxes
-    const boxW = 200, boxH = 420;
-    const sixW = 80, sixH = 220;
-
-    // Left penalty
-    pitchGroup.add(line(new Konva.Rect({ x:pad, y:(H-boxH)/2, width: boxW, height: boxH, fillEnabled:false })));
-    pitchGroup.add(line(new Konva.Rect({ x:pad, y:(H-sixH)/2, width: sixW, height: sixH, fillEnabled:false })));
-    pitchGroup.add(new Konva.Circle({ x: pad + 120, y: H/2, radius: 4, fill:'white', opacity:0.95 }));
-
-    // Right penalty
-    pitchGroup.add(line(new Konva.Rect({ x:W-pad-boxW, y:(H-boxH)/2, width: boxW, height: boxH, fillEnabled:false })));
-    pitchGroup.add(line(new Konva.Rect({ x:W-pad-sixW, y:(H-sixH)/2, width: sixW, height: sixH, fillEnabled:false })));
-    pitchGroup.add(new Konva.Circle({ x: W - pad - 120, y: H/2, radius: 4, fill:'white', opacity:0.95 }));
-
-    // Arcs (approx)
-    pitchGroup.add(line(new Konva.Arc({ x: pad + boxW, y:H/2, innerRadius: 89, outerRadius: 90, angle: 120, rotation: 300 })));
-    pitchGroup.add(line(new Konva.Arc({ x: W - pad - boxW, y:H/2, innerRadius: 89, outerRadius: 90, angle: 120, rotation: 120 })));
-  }
-
-  function drawHalfPitchLines(){
-    const W = LOGICAL_W, H = LOGICAL_H;
-    const pad = 40;
-    const line = (shape) => { shape.stroke('white'); shape.strokeWidth(3); shape.opacity(0.95); return shape; };
-
-    // We'll draw the right half of a full pitch (attacking half)
-    // Outer
-    pitchGroup.add(line(new Konva.Rect({ x:pad, y:pad, width: W-2*pad, height: H-2*pad, fillEnabled:false })));
-
-    // Midline at left edge-ish (represent halfway line)
-    pitchGroup.add(line(new Konva.Line({ points:[pad + 80, pad, pad + 80, H-pad] })));
-
-    // Center circle partly (at halfway line)
-    pitchGroup.add(line(new Konva.Arc({ x: pad + 80, y:H/2, innerRadius: 89, outerRadius: 90, angle: 180, rotation: 270 })));
-    pitchGroup.add(new Konva.Circle({ x: pad + 80, y:H/2, radius: 4, fill:'white', opacity:0.95 }));
-
-    // Penalty on right
-    const boxW = 200, boxH = 420;
-    const sixW = 80, sixH = 220;
-    pitchGroup.add(line(new Konva.Rect({ x:W-pad-boxW, y:(H-boxH)/2, width: boxW, height: boxH, fillEnabled:false })));
-    pitchGroup.add(line(new Konva.Rect({ x:W-pad-sixW, y:(H-sixH)/2, width: sixW, height: sixH, fillEnabled:false })));
-    pitchGroup.add(new Konva.Circle({ x: W - pad - 120, y: H/2, radius: 4, fill:'white', opacity:0.95 }));
-    pitchGroup.add(line(new Konva.Arc({ x: W - pad - boxW, y:H/2, innerRadius: 89, outerRadius: 90, angle: 120, rotation: 120 })));
-  }
-
-  function drawBlank(){
-    // just a dark neutral base
-    bgBase.fill('#10121a');
-  }
-
-  function drawPitch(type){
-    clearPitch();
-    if (type === 'blank'){
-      drawBlank();
-      bgLayer.batchDraw();
-      return;
+  // Color
+  document.getElementById('colorPicker').addEventListener('change', (e) => {
+    currentColor = e.target.value;
+    if(canvas.isDrawingMode && canvas.freeDrawingBrush){
+      canvas.freeDrawingBrush.color = currentColor;
     }
-    bgBase.fill('#0f6d3f'); // green base
-    if (type === 'full') drawFullPitchLines();
-    if (type === 'half') drawHalfPitchLines();
-    bgLayer.batchDraw();
-  }
-
-  $('pitchType').addEventListener('change', (e) => {
-    drawPitch(e.target.value);
-    saveHistory();
+    // If something is selected, tint it
+    const obj = canvas.getActiveObject();
+    if(obj){
+      tintObject(obj, currentColor);
+      canvas.requestRenderAll();
+      pushHistory();
+    }
   });
 
-  // ---------- Node factory (equipment/text) ----------
-  function makePlayer(x,y){
-    const g = new Konva.Group({ x, y, draggable: mode==='edit', name: 'selectable' });
-
-    const circle = new Konva.Circle({
-      x:0, y:0, radius: 22,
-      fill: strokeColor,
-      stroke: 'rgba(255,255,255,.75)',
-      strokeWidth: 2
-    });
-
-    const label = new Konva.Text({
-      x:-22, y:-10, width:44,
-      text: '1',
-      fontSize: 16,
-      fontStyle: '700',
-      fontFamily: 'system-ui,Segoe UI,Arial',
-      fill: '#0b0b0f',
-      align: 'center'
-    });
-
-    g.add(circle);
-    g.add(label);
-
-    g.setAttr('kind','player');
-    g.setAttr('labelNodeId', label._id);
-
-    return g;
-  }
-
-  function makeBall(x,y){
-    const g = new Konva.Group({ x, y, draggable: mode==='edit', name: 'selectable' });
-    const outer = new Konva.Circle({ x:0,y:0,radius:16, fill:'#ffffff', stroke:'rgba(0,0,0,.5)', strokeWidth:2 });
-    const inner = new Konva.Circle({ x:0,y:0,radius:6, fill: strokeColor, opacity:0.9 });
-    g.add(outer); g.add(inner);
-    g.setAttr('kind','ball');
-    return g;
-  }
-
-  function makeCone(x,y){
-    const g = new Konva.Group({ x, y, draggable: mode==='edit', name: 'selectable' });
-    const tri = new Konva.RegularPolygon({ x:0,y:6, sides:3, radius:22, fill: strokeColor, stroke:'rgba(255,255,255,.6)', strokeWidth:2 });
-    const base = new Konva.Rect({ x:-18, y:22, width:36, height:8, fill:'rgba(255,255,255,.25)' });
-    g.add(tri); g.add(base);
-    g.setAttr('kind','cone');
-    return g;
-  }
-
-  function makeGoal(x,y){
-    // "Old-style" simple goal frame + faint net lines
-    const g = new Konva.Group({ x, y, draggable: mode==='edit', name: 'selectable' });
-    const frame = new Konva.Rect({ x:-34,y:-22,width:68,height:44, stroke: strokeColor, strokeWidth:4, cornerRadius:4 });
-    const net1 = new Konva.Line({ points:[-30,-16, 30,16], stroke:'rgba(255,255,255,.25)', strokeWidth:2 });
-    const net2 = new Konva.Line({ points:[-30,16, 30,-16], stroke:'rgba(255,255,255,.25)', strokeWidth:2 });
-    g.add(frame); g.add(net1); g.add(net2);
-    g.setAttr('kind','goal');
-    return g;
-  }
-
-  function makeMannequin(x,y){
-    const g = new Konva.Group({ x, y, draggable: mode==='edit', name: 'selectable' });
-    const body = new Konva.Rect({ x:-14,y:-22,width:28,height:56, cornerRadius: 14, fill:'rgba(255,255,255,.10)', stroke: strokeColor, strokeWidth:3 });
-    const head = new Konva.Circle({ x:0,y:-34,radius:10, fill:'rgba(255,255,255,.10)', stroke: strokeColor, strokeWidth:3 });
-    g.add(head); g.add(body);
-    g.setAttr('kind','mannequin');
-    return g;
-  }
-
-  function makePole(x,y){
-    const g = new Konva.Group({ x, y, draggable: mode==='edit', name: 'selectable' });
-    const line = new Konva.Rect({ x:-3,y:-40,width:6,height:80, fill: strokeColor, cornerRadius: 3 });
-    const cap = new Konva.Circle({ x:0,y:-42,radius:6, fill: 'rgba(255,255,255,.25)' });
-    g.add(line); g.add(cap);
-    g.setAttr('kind','pole');
-    return g;
-  }
-
-  function makeFlag(x,y){
-    const g = new Konva.Group({ x, y, draggable: mode==='edit', name: 'selectable' });
-    const pole = new Konva.Rect({ x:-3,y:-44,width:6,height:88, fill:'rgba(255,255,255,.55)', cornerRadius:3 });
-    const flag = new Konva.Line({
-      points:[3,-40, 44,-30, 3,-20],
-      closed:true,
-      fill: strokeColor,
-      stroke: 'rgba(255,255,255,.60)',
-      strokeWidth:2,
-      lineJoin:'round'
-    });
-    const stitch = new Konva.Line({
-      points:[8,-36, 32,-30, 8,-24],
-      stroke:'rgba(0,0,0,.25)',
-      strokeWidth:2,
-      lineCap:'round',
-      lineJoin:'round',
-      opacity:0.8
-    });
-    g.add(pole); g.add(flag); g.add(stitch);
-    g.setAttr('kind','flag');
-    return g;
-  }
-
-  function makeText(x,y){
-    const t = new Konva.Text({
-      x, y,
-      text: 'Double-tap to edit',
-      fontSize: 22,
-      fontStyle: '700',
-      fontFamily: 'system-ui,Segoe UI,Arial',
-      fill: strokeColor,
-      draggable: mode==='edit',
-      name:'selectable'
-    });
-    t.setAttr('kind','text');
-    return t;
-  }
-
-  function attachNodeBehaviours(node){
-    // selection
-    node.on('click tap', (e) => {
-      if (mode !== 'edit') return;
-      e.cancelBubble = true;
-      transformer.nodes([node]);
-      drawLayer.batchDraw();
-    });
-
-    // if group: allow selecting children too
-    node.on('mousedown touchstart', (e) => {
-      if (mode !== 'edit') return;
-      e.cancelBubble = true;
-    });
-
-    // prevent transformer lingering when dragging ends
-    node.on('dragend transformend', () => {
-      saveHistory();
-    });
-
-    // easy text edit
-    if (node.getAttr('kind') === 'text'){
-      node.on('dblclick dbltap', () => editKonvaText(node));
-    }
-
-    // player label edit (double click / tap on group)
-    if (node.getAttr('kind') === 'player'){
-      node.on('dblclick dbltap', () => {
-        const labelId = node.getAttr('labelNodeId');
-        const label = drawLayer.findOne(node => node._id === labelId);
-        if (label) editKonvaText(label, { asLabel:true, maxLen:3 });
+  function tintObject(obj, color){
+    // For SVG groups/images: easiest is apply a ColorMatrix? We'll do per-type:
+    // - If it's a group created from SVG, attempt set fill on sub-objects
+    if(obj.type === 'group'){
+      obj._objects.forEach(o => {
+        if(o.fill) o.set('fill', color);
+        if(o.stroke && o.stroke !== 'rgba(255,255,255,0.45)') o.set('stroke', color);
       });
+      obj.setCoords();
+      return;
     }
-  }
-
-  function attachNodeBehavioursToAll(){
-    drawLayer.getChildren().forEach(n => {
-      if (n === transformer) return;
-      attachNodeBehaviours(n);
-    });
-  }
-
-  // Konva text editing overlay
-  function editKonvaText(textNode, opts = {}){
-    const stageBox = stage.container().getBoundingClientRect();
-    const absPos = textNode.getAbsolutePosition();
-
-    // transform to client coords
-    const scale = stage.scaleX();
-    const x = stageBox.left + absPos.x * scale;
-    const y = stageBox.top + absPos.y * scale;
-
-    const textarea = document.createElement('textarea');
-    textarea.className = 'konva-textarea';
-    textarea.value = textNode.text();
-    textarea.style.left = `${x}px`;
-    textarea.style.top = `${y}px`;
-
-    // sizing
-    const w = Math.max(140, (textNode.width() || 160) * scale);
-    textarea.style.width = `${w}px`;
-    textarea.style.height = `${Math.max(44, (textNode.height() + 10) * scale)}px`;
-
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-
-    const remove = (commit) => {
-      if (commit){
-        let v = textarea.value;
-        if (opts.maxLen) v = v.slice(0, opts.maxLen);
-        textNode.text(v);
-        if (opts.asLabel){
-          // center label inside player circle
-          textNode.offsetX(textNode.width()/2);
-        }
-        saveHistory();
-        drawLayer.batchDraw();
-      }
-      textarea.remove();
-      window.removeEventListener('click', handleOutsideClick);
-    };
-
-    function handleOutsideClick(e){
-      if (e.target !== textarea) remove(true);
+    if(obj.type === 'path' || obj.type === 'line'){
+      obj.set('stroke', color);
+      return;
     }
-
-    textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey){
-        e.preventDefault();
-        remove(true);
-      }
-      if (e.key === 'Escape'){
-        e.preventDefault();
-        remove(false);
-      }
-    });
-
-    // click outside commit
-    setTimeout(() => window.addEventListener('click', handleOutsideClick), 0);
+    if(obj.type === 'i-text' || obj.type === 'text'){
+      obj.set('fill', color);
+      return;
+    }
+    // fallback
+    if(obj.fill) obj.set('fill', color);
+    if(obj.stroke) obj.set('stroke', color);
   }
 
-  // ---------- Line drawing ----------
-  let isDrawing = false;
-  let currentLine = null;
-
-  function makeLine(start, end){
-    const common = {
-      stroke: strokeColor,
-      strokeWidth: 4,
-      lineCap: 'round',
-      lineJoin: 'round',
-      name: 'selectable',
-    };
-
-    if (lineType === 'arrow'){
-      const a = new Konva.Arrow({
-        points: [start.x, start.y, end.x, end.y],
-        pointerLength: 12,
-        pointerWidth: 12,
-        ...common
+  // -----------------------
+  // Add objects
+  // -----------------------
+  function addSVGIcon(key, x, y){
+    const url = svgIconDataUrl(ICONS[key]);
+    fabric.loadSVGFromURL(url, (objects, options) => {
+      const group = fabric.util.groupSVGElements(objects, options);
+      group.set({
+        left: x,
+        top: y,
+        originX: 'center',
+        originY: 'center',
+        hasControls: true,
+        hasBorders: true,
+        cornerStyle: 'circle',
+        cornerColor: 'rgba(255,212,0,0.85)',
+        borderColor: 'rgba(255,212,0,0.55)',
+        transparentCorners: false,
+        padding: 4,
+        tgType: key,
+        name: key
       });
-      a.setAttr('isDrawable', true);
-      a.setAttr('kind', 'line');
-      return a;
-    }
 
-    const dashed = (lineType === 'dashed');
-    const curved = (lineType === 'curved');
-
-    const l = new Konva.Line({
-      points: [start.x, start.y, end.x, end.y],
-      tension: curved ? 0.5 : 0,
-      bezier: curved,
-      dash: dashed ? [12, 10] : [],
-      ...common
-    });
-    l.setAttr('isDrawable', true);
-    l.setAttr('kind','line');
-    return l;
-  }
-
-  stage.on('mousedown touchstart', (e) => {
-    // deselect if click empty in edit mode
-    if (mode === 'edit'){
-      const clickedOnEmpty = e.target === stage;
-      if (clickedOnEmpty){
-        transformer.nodes([]);
-        drawLayer.batchDraw();
-      }
-      return;
-    }
-
-    // Add equipment
-    if (lineType === 'none'){
-      const pos = stage.getPointerPosition();
-      if (!pos) return;
-      const p = toLogical(pos);
-
-      const node = (() => {
-        switch(addType){
-          case 'player': return makePlayer(p.x, p.y);
-          case 'ball': return makeBall(p.x, p.y);
-          case 'cone': return makeCone(p.x, p.y);
-          case 'goal': return makeGoal(p.x, p.y);
-          case 'mannequin': return makeMannequin(p.x, p.y);
-          case 'pole': return makePole(p.x, p.y);
-          case 'flag': return makeFlag(p.x, p.y);
-          case 'text': return makeText(p.x, p.y);
-          default: return makePlayer(p.x, p.y);
+      // Tint main fills to currentColor, but preserve net lines on goal etc.
+      group._objects.forEach(o => {
+        if(o.fill && o.fill !== 'none'){
+          // keep ball as true colors
+          if(key !== 'ball') o.set('fill', currentColor);
         }
-      })();
+        // preserve goal/net white lines; only tint frame (currentColor already)
+        if(key === 'goal' && o.stroke && String(o.stroke).includes('rgba(255,255,255')) {
+          // keep as is
+        } else if(o.stroke && (key !== 'ball')) {
+          // lightly tint strokes if they are not translucent whites
+          if(!String(o.stroke).includes('rgba(255,255,255')) o.set('stroke', currentColor);
+        }
+      });
 
-      drawLayer.add(node);
-      attachNodeBehaviours(node);
-      drawLayer.batchDraw();
-      saveHistory();
+      // Size defaults
+      if(key === 'goal'){
+        group.scale(0.65);
+      } else if(key === 'mannequin' || key === 'pole' || key === 'flag'){
+        group.scale(0.55);
+      } else if(key === 'ball'){
+        group.scale(0.45);
+      } else {
+        group.scale(0.55);
+      }
+
+      canvas.add(group);
+      canvas.setActiveObject(group);
+      canvas.requestRenderAll();
+      pushHistory();
+    });
+  }
+
+  function addText(x,y){
+    const t = new fabric.IText('Text', {
+      left: x, top: y,
+      originX:'center', originY:'center',
+      fontSize: 28,
+      fill: currentColor,
+      fontWeight: '700',
+      fontFamily: 'Arial',
+      editable: true,
+      tgType: 'text'
+    });
+    canvas.add(t);
+    canvas.setActiveObject(t);
+    canvas.requestRenderAll();
+    // enter editing immediately
+    setTimeout(() => {
+      t.enterEditing();
+      t.selectAll();
+      canvas.requestRenderAll();
+    }, 0);
+    pushHistory();
+  }
+
+  // In add mode, click to place
+  canvas.on('mouse:down', (opt) => {
+    const p = canvas.getPointer(opt.e);
+
+    // Free draw is handled by Fabric
+    if(mode === 'freeDraw') return;
+
+    // Lines
+    if(mode.startsWith('line')){
+      isDrawingLine = true;
+      lineStart = { x: p.x, y: p.y };
+
+      if(mode === 'lineCurved'){
+        // temp path placeholder
+        const path = new fabric.Path(`M ${p.x} ${p.y} Q ${p.x} ${p.y} ${p.x} ${p.y}`, {
+          stroke: currentColor,
+          strokeWidth: 4,
+          fill: '',
+          selectable: false,
+          evented: false,
+          objectCaching: false
+        });
+        if(mode === 'lineDashed') path.strokeDashArray = [10, 10];
+        lineTemp = path;
+        canvas.add(lineTemp);
+        return;
+      }
+
+      const points = [p.x, p.y, p.x, p.y];
+      const line = new fabric.Line(points, {
+        strokeWidth: 4,
+        stroke: currentColor,
+        selectable: false,
+        evented: false,
+        objectCaching: false
+      });
+      if(mode === 'lineDashed') line.strokeDashArray = [10, 10];
+      lineTemp = line;
+      canvas.add(lineTemp);
       return;
     }
 
-    // Draw lines
-    isDrawing = true;
-    const pos = stage.getPointerPosition();
-    if (!pos) return;
-    const start = toLogical(pos);
-    currentLine = makeLine(start, start);
-    drawLayer.add(currentLine);
-    drawLayer.batchDraw();
-  });
-
-  stage.on('mousemove touchmove', () => {
-    if (!isDrawing || !currentLine) return;
-    const pos = stage.getPointerPosition();
-    if (!pos) return;
-    const end = toLogical(pos);
-
-    const pts = currentLine.points();
-    pts[2] = end.x;
-    pts[3] = end.y;
-    currentLine.points(pts);
-    drawLayer.batchDraw();
-  });
-
-  stage.on('mouseup touchend', () => {
-    if (!isDrawing) return;
-    isDrawing = false;
-    if (currentLine){
-      saveHistory();
-      currentLine = null;
+    // Add objects
+    if(mode === 'add' && addType){
+      if(addType === 'text') addText(p.x, p.y);
+      else addSVGIcon(addType, p.x, p.y);
+      return;
     }
   });
 
-  // ---------- Delete, Clear ----------
-  $('deleteBtn').addEventListener('click', () => {
-    const nodes = transformer.nodes();
-    if (!nodes.length) return;
-    nodes.forEach(n => n.destroy());
-    transformer.nodes([]);
-    drawLayer.batchDraw();
-    saveHistory();
+  canvas.on('mouse:move', (opt) => {
+    if(!isDrawingLine || !lineTemp || !lineStart) return;
+    const p = canvas.getPointer(opt.e);
+
+    if(mode === 'lineCurved'){
+      // control point is midpoint bumped by perpendicular offset
+      const sx = lineStart.x, sy = lineStart.y, ex = p.x, ey = p.y;
+      const mx = (sx + ex) / 2, my = (sy + ey) / 2;
+      // Use shift key to exaggerate curve
+      const factor = opt.e.shiftKey ? 0.35 : 0.18;
+      const dx = ex - sx, dy = ey - sy;
+      const cx = mx - dy * factor;
+      const cy = my + dx * factor;
+
+      const d = `M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`;
+      lineTemp.set({ path: fabric.Path.parsePath(d) });
+      lineTemp.setCoords();
+      canvas.requestRenderAll();
+      return;
+    }
+
+    lineTemp.set({ x2: p.x, y2: p.y });
+    lineTemp.setCoords();
+    canvas.requestRenderAll();
   });
 
-  $('clearBtn').addEventListener('click', () => {
-    transformer.nodes([]);
-    drawLayer.getChildren().forEach(n => {
-      if (n !== transformer) n.destroy();
+  canvas.on('mouse:up', (opt) => {
+    if(!isDrawingLine) return;
+    isDrawingLine = false;
+
+    if(!lineTemp) return;
+    const obj = lineTemp;
+    lineTemp = null;
+
+    // Convert arrow line into group with triangle head
+    if(mode === 'lineArrow'){
+      const x1 = obj.x1, y1 = obj.y1, x2 = obj.x2, y2 = obj.y2;
+      canvas.remove(obj);
+
+      const baseLine = new fabric.Line([x1,y1,x2,y2], {
+        stroke: currentColor,
+        strokeWidth: 4,
+        selectable: false,
+        evented: false,
+        objectCaching: false
+      });
+
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const headLen = 16;
+      const tri = new fabric.Triangle({
+        left: x2,
+        top: y2,
+        originX: 'center',
+        originY: 'center',
+        width: headLen,
+        height: headLen,
+        fill: currentColor,
+        angle: angle * 180 / Math.PI + 90,
+        selectable: false,
+        evented: false
+      });
+
+      const g = new fabric.Group([baseLine, tri], {
+        selectable: false,
+        evented: false,
+        tgType: 'arrow'
+      });
+      canvas.add(g);
+    }
+
+    // Make drawn lines selectable only in edit mode
+    if(mode === 'lineStraight' || mode === 'lineDashed' || mode === 'lineCurved'){
+      obj.set({ selectable:false, evented:false, tgType: 'line' });
+    }
+
+    canvas.requestRenderAll();
+    pushHistory();
+  });
+
+  // When switching to edit mode, make lines selectable again
+  function setSelectableForAll(isSelectable){
+    canvas.forEachObject(o => {
+      if(o === canvas.backgroundImage) return;
+      o.selectable = isSelectable;
+      o.evented = isSelectable;
     });
-    drawLayer.batchDraw();
-    saveHistory();
-  });
-
-  $('undoBtn').addEventListener('click', undo);
-
-  // ---------- Export (PNG/PDF) ----------
-  function exportStagePNG(pixelRatio=2){
-    // Temporarily deselect transformer so it doesn't appear
-    const prev = transformer.nodes();
-    transformer.nodes([]);
-    drawLayer.batchDraw();
-
-    const dataUrl = stage.toDataURL({ pixelRatio });
-
-    transformer.nodes(prev);
-    drawLayer.batchDraw();
-    return dataUrl;
+    canvas.selection = isSelectable;
+    canvas.requestRenderAll();
   }
 
-  $('pngBtn').addEventListener('click', () => {
-    const url = exportStagePNG(3);
-    downloadDataUrl(url, 'tactigrid-drill.png');
+  // Keep edit mode lines editable
+  canvas.on('selection:created', () => {});
+  canvas.on('selection:updated', () => {});
+
+  // Text editing helper: double click
+  canvas.on('mouse:dblclick', (opt) => {
+    const target = opt.target;
+    if(target && (target.type === 'i-text' || target.tgType === 'text')){
+      target.enterEditing();
+      target.selectAll();
+      canvas.requestRenderAll();
+    }
   });
 
-  $('pdfBtn').addEventListener('click', async () => {
+  // -----------------------
+  // Undo / Redo
+  // -----------------------
+  function undo(){
+    if(historyIndex <= 0) return;
+    historyIndex--;
+    loadHistory(historyIndex);
+  }
+  function redo(){
+    if(historyIndex >= history.length - 1) return;
+    historyIndex++;
+    loadHistory(historyIndex);
+  }
+
+  document.getElementById('undoBtn').addEventListener('click', undo);
+  document.getElementById('redoBtn').addEventListener('click', redo);
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    const objs = canvas.getObjects().filter(o => o !== canvas.backgroundImage);
+    objs.forEach(o => canvas.remove(o));
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+    pushHistory();
+  });
+
+  // Push initial state
+  setMode('edit');
+  pushHistory();
+
+  // When editing objects, push history after modify
+  canvas.on('object:modified', () => pushHistory());
+  canvas.on('path:created', (e) => {
+    // free draw paths
+    const p = e.path;
+    p.set({ stroke: currentColor, strokeWidth: 4, fill: '' });
+    // free draw paths selectable only in edit mode
+    p.selectable = (mode === 'edit');
+    p.evented = (mode === 'edit');
+    p.tgType = 'freedraw';
+    pushHistory();
+  });
+
+  // Ensure edit mode restores selectability
+  // (because we set selectable false for draw tools)
+  const _setMode = setMode;
+  setMode = function(newMode){
+    _setMode(newMode);
+    if(newMode === 'edit') setSelectableForAll(true);
+    else if(newMode !== 'edit') setSelectableForAll(false);
+    // BUT keep add tools from permanently disabling later: handled above
+  };
+
+  // -----------------------
+  // Branding overlay for exports
+  // -----------------------
+  function addBrandingOverlay(){
+    // Temporary: add a small TG mark top-left on canvas for exports only
+    const pad = 12;
+    const badge = new fabric.Group([
+      new fabric.Rect({
+        width: 92, height: 34, rx: 10, ry: 10,
+        fill: 'rgba(0,0,0,0.45)',
+        stroke: 'rgba(255,212,0,0.55)',
+        strokeWidth: 2
+      }),
+      new fabric.Text('TactiGrid', {
+        left: 10, top: 8,
+        fontSize: 16,
+        fontWeight: '800',
+        fill: '#ffd400',
+        fontFamily: 'Arial'
+      })
+    ],{
+      left: pad, top: pad,
+      selectable:false, evented:false,
+      originX:'left', originY:'top',
+      name:'__tg_brand__'
+    });
+    canvas.add(badge);
+    badge.bringToFront();
+    canvas.requestRenderAll();
+    return badge;
+  }
+
+  function removeBrandingOverlay(badge){
+    if(badge) canvas.remove(badge);
+    canvas.requestRenderAll();
+  }
+
+  // -----------------------
+  // Export PNG
+  // -----------------------
+  document.getElementById('exportPngBtn').addEventListener('click', () => {
+    // Add branding overlay temporarily
+    const badge = addBrandingOverlay();
+
+    // Ensure everything is visible and colored
+    canvas.discardActiveObject();
+    canvas.renderAll();
+
+    const dataUrl = canvas.toDataURL({
+      format: 'png',
+      quality: 1,
+      multiplier: 2  // higher resolution export
+    });
+
+    removeBrandingOverlay(badge);
+
+    const a = document.createElement('a');
+    a.download = 'tactigrid-drill.png';
+    a.href = dataUrl;
+    a.click();
+  });
+
+  // -----------------------
+  // Export PDF (includes notes + branding)
+  // -----------------------
+  document.getElementById('exportPdfBtn').addEventListener('click', async () => {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
 
-    const imgUrl = exportStagePNG(3);
+    const notes = (document.getElementById('notes').value || '').trim();
 
-    // Page sizing
+    // Temporary branding overlay on canvas so it appears in the image
+    const badge = addBrandingOverlay();
+
+    canvas.discardActiveObject();
+    canvas.renderAll();
+
+    const imgData = canvas.toDataURL({
+      format: 'png',
+      quality: 1,
+      multiplier: 2
+    });
+
+    removeBrandingOverlay(badge);
+
+    // Create PDF (A4 portrait)
+    const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
 
-    // Reserve space for notes at bottom
-    const margin = 28;
-    const notesBoxH = 120;
-
-    const availableW = pageW - margin*2;
-    const availableH = pageH - margin*2 - notesBoxH;
-
-    // Fit image into available box
-    const img = new Image();
-    img.src = imgUrl;
-    await img.decode();
-
-    const imgRatio = img.width / img.height;
-    let drawW = availableW;
-    let drawH = drawW / imgRatio;
-    if (drawH > availableH){
-      drawH = availableH;
-      drawW = drawH * imgRatio;
-    }
-    const imgX = margin + (availableW - drawW)/2;
-    const imgY = margin;
-
-    doc.addImage(imgUrl, 'PNG', imgX, imgY, drawW, drawH, undefined, 'FAST');
-
-    // Notes
-    const notes = $('notesArea').value || '';
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(12);
+    // Header branding (text)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
     doc.setTextColor(255, 212, 0);
-    doc.text('Session Notes', margin, margin + availableH + 22);
+    doc.text('TactiGrid', 40, 38);
 
-    doc.setFont('helvetica','normal');
-    doc.setFontSize(11);
-    doc.setTextColor(20, 20, 20);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(180, 180, 194);
+    doc.text('Drill Designer Export', 40, 55);
 
-    // Notes box background (light)
-    doc.setFillColor(245,245,245);
-    doc.roundedRect(margin, margin + availableH + 30, availableW, notesBoxH - 30, 10, 10, 'F');
+    // Add the image below header
+    const top = 70;
+    const margin = 40;
+    const availableW = pageW - margin * 2;
 
-    doc.setTextColor(30,30,30);
-    const lines = wrapTextToWidth(doc, notes, availableW - 20);
-    const startY = margin + availableH + 52;
-    let y = startY;
-    for (const line of lines){
-      if (y > margin + availableH + notesBoxH - 12) break;
-      doc.text(line, margin + 10, y);
+    // Calculate image size to fit
+    // We can approximate aspect ratio from canvas
+    const aspect = canvas.getWidth() / canvas.getHeight();
+    let imgW = availableW;
+    let imgH = imgW / aspect;
+
+    // If too tall, shrink
+    const maxImgH = pageH * 0.58;
+    if(imgH > maxImgH){
+      imgH = maxImgH;
+      imgW = imgH * aspect;
+    }
+
+    const imgX = (pageW - imgW) / 2;
+    const imgY = top;
+
+    doc.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH);
+
+    // Notes section
+    const notesTop = imgY + imgH + 18;
+    doc.setDrawColor(255, 212, 0);
+    doc.setLineWidth(1);
+    doc.line(margin, notesTop, pageW - margin, notesTop);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(255, 234, 97);
+    doc.text('Notes', margin, notesTop + 18);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(245, 245, 247);
+
+    const text = notes || '(No notes added)';
+    const wrapped = doc.splitTextToSize(text, pageW - margin * 2);
+    let y = notesTop + 34;
+
+    // If notes overflow, continue on next page(s)
+    for(let i=0; i<wrapped.length; i++){
+      if(y > pageH - 50){
+        doc.addPage();
+        y = 50;
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(12);
+        doc.setTextColor(255, 234, 97);
+        doc.text('Notes (continued)', margin, 36);
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(10);
+        doc.setTextColor(245,245,247);
+        y = 56;
+      }
+      doc.text(wrapped[i], margin, y);
       y += 14;
     }
+
+    // Footer branding
+    const footer = 'Generated with TactiGrid Drill Designer';
+    doc.setFontSize(9);
+    doc.setTextColor(180,180,194);
+    doc.text(footer, margin, pageH - 20);
 
     doc.save('tactigrid-drill.pdf');
   });
 
-  // ---------- Responsive scaling ----------
-  function fitStage(){
-    const w = host.clientWidth;
-    const h = host.clientHeight;
-
-    // scale based on width, keep logical aspect
-    const scale = Math.min(w / LOGICAL_W, h / LOGICAL_H);
-
-    stage.width(w);
-    stage.height(h);
-    stage.scale({ x: scale, y: scale });
-
-    // Center logical canvas within host
-    stage.position({
-      x: (w - LOGICAL_W * scale) / 2,
-      y: (h - LOGICAL_H * scale) / 2
-    });
-    stage.batchDraw();
-  }
-
-  function toLogical(pointerPos){
-    // Convert from stage coordinates to logical coordinates (account for scale + offset)
-    const scale = stage.scaleX();
-    const lx = (pointerPos.x - stage.x()) / scale;
-    const ly = (pointerPos.y - stage.y()) / scale;
-    return { x: lx, y: ly };
-  }
-
-  window.addEventListener('resize', () => {
-    fitStage();
-  });
-
-  // ---------- Click empty to deselect (edit mode) ----------
-  stage.on('click tap', (e) => {
-    if (mode !== 'edit') return;
-    if (e.target === stage){
-      transformer.nodes([]);
-      drawLayer.batchDraw();
-    }
-  });
-
-  // ---------- Init ----------
-  drawPitch('full');
-  setMode('add');
-  fitStage();
-  saveHistory(); // initial
-
-})();
 </script>
 </body>
 </html>
