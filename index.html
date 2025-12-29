@@ -2,1889 +2,1355 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TactiGrid Drill Designer</title>
+
+  <!-- Fabric.js for object editing (drag/resize/rotate) + touch support -->
+  <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
 
   <!-- jsPDF for PDF export -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
     :root{
-      --bg:#0b0b0d;
-      --panel:#121218;
-      --panel2:#161622;
+      --bg:#0b0b0f;
+      --panel:#11121a;
+      --panel2:#0f1017;
       --text:#f3f3f3;
-      --muted:#a9a9b3;
-      --line:#2a2a35;
-      --accent:#ffd400;
-      --danger:#ff4d4d;
-      --good:#38d996;
+      --muted:#b8b8b8;
+      --yellow:#ffd400;
+      --border:rgba(255,255,255,0.10);
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+      --radius: 14px;
     }
 
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
     body{
       margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 700px at 20% 10%, #171723 0%, var(--bg) 60%);
+      background: radial-gradient(1200px 700px at 20% 0%, rgba(255,212,0,0.10), transparent 55%),
+                  radial-gradient(1000px 600px at 100% 0%, rgba(255,212,0,0.06), transparent 55%),
+                  var(--bg);
       color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
 
     .wrap{
-      max-width:1200px;
-      margin:0 auto;
-      padding:12px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 18px 14px 40px;
     }
 
-    .topbar{
+    header{
       display:flex;
+      gap:12px;
       align-items:center;
       justify-content:space-between;
-      gap:12px;
-      padding:12px 14px;
-      border:1px solid var(--line);
-      border-radius:14px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-      backdrop-filter: blur(8px);
+      margin-bottom: 14px;
     }
 
     .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width:220px;
+      display:flex; align-items:center; gap:10px;
+      user-select:none;
     }
-    .brand-badge{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      height:30px;
-      padding:0 10px;
-      border-radius:10px;
-      border:1px solid rgba(255,212,0,.5);
-      color:var(--accent);
-      font-weight:800;
-      letter-spacing:.2px;
-      background: rgba(255,212,0,.06);
+    .logoMark{
+      width:34px; height:34px; border-radius: 10px;
+      background: linear-gradient(135deg, rgba(255,212,0,0.95), rgba(255,212,0,0.65));
+      box-shadow: 0 10px 25px rgba(255,212,0,0.18);
+      position:relative;
     }
-    .brand-title{
-      font-weight:800;
-      line-height:1.1;
+    .logoMark:after{
+      content:"";
+      position:absolute; inset:8px;
+      border-radius: 8px;
+      border:2px solid rgba(0,0,0,0.55);
     }
-    .brand-sub{
-      color:var(--muted);
-      font-size:12px;
+    .brand h1{
+      font-size: 18px;
+      margin:0;
+      letter-spacing: 0.2px;
+      font-weight: 800;
+    }
+    .brand .sub{
+      margin:0;
+      font-size: 12px;
+      color: var(--muted);
       margin-top:2px;
+    }
+
+    .topControls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 70%),
+                  var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
     }
 
     .toolbar{
       display:flex;
-      flex-wrap:wrap;
       gap:10px;
+      padding: 12px;
       align-items:center;
-      justify-content:flex-end;
-      width:100%;
+      flex-wrap:wrap;
     }
 
     .group{
       display:flex;
+      gap:10px;
       align-items:center;
-      gap:8px;
-      padding:8px;
-      border:1px solid var(--line);
-      border-radius:12px;
-      background: rgba(0,0,0,.22);
+      flex-wrap:wrap;
+      padding: 6px 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
     }
 
-    .label{
-      font-size:12px;
-      color:var(--muted);
+    label{
+      font-size: 12px;
+      color: var(--muted);
+      margin-right: 4px;
       white-space:nowrap;
     }
 
-    select, button, input[type="color"]{
+    select, input[type="color"], textarea{
       background: var(--panel2);
       color: var(--text);
-      border: 1px solid var(--line);
-      border-radius:10px;
-      padding:8px 10px;
-      font-weight:600;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 10px;
+      padding: 10px 10px;
       outline:none;
+      font-size: 14px;
     }
 
-    select{
-      padding-right:28px;
-      cursor:pointer;
+    input[type="color"]{
+      padding: 0;
+      width: 44px;
+      height: 38px;
+      border-radius: 10px;
     }
 
-    button{
+    .btn{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
       cursor:pointer;
+      font-weight: 700;
       display:inline-flex;
+      gap:10px;
       align-items:center;
-      gap:8px;
+      transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease;
       user-select:none;
     }
-    button:hover{ border-color: rgba(255,212,0,.45); }
-    button:active{ transform: translateY(1px); }
+    .btn:hover{
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.18);
+    }
+    .btn:active{ transform: translateY(1px); }
 
-    .btn-accent{
-      border-color: rgba(255,212,0,.55);
-      background: rgba(255,212,0,.10);
+    .btn.primary{
+      background: rgba(255,212,0,0.14);
+      border-color: rgba(255,212,0,0.35);
+    }
+    .btn.primary:hover{
+      background: rgba(255,212,0,0.18);
+      border-color: rgba(255,212,0,0.55);
     }
 
-    .btn-danger{
-      border-color: rgba(255,77,77,.55);
-      background: rgba(255,77,77,.08);
+    .btn.icon{
+      padding: 10px 12px;
+      min-width: 44px;
+      justify-content:center;
     }
 
-    .btn-ghost{
-      background: rgba(255,255,255,.03);
+    .btn.active{
+      outline: 2px solid rgba(255,212,0,0.55);
+      outline-offset: 1px;
     }
 
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      color:var(--muted);
-      font-size:12px;
-      background: rgba(255,255,255,.03);
-      white-space:nowrap;
+    .ico{
+      width: 18px; height: 18px; display:inline-block;
     }
 
-    .stage{
-      margin-top:12px;
-      border-radius:16px;
-      border:1px solid var(--line);
-      overflow:hidden;
-      background: rgba(0,0,0,.25);
+    .layout{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 14px;
     }
 
-    .canvas-wrap{
-      position:relative;
+    .canvasPanel{
+      padding: 12px;
+    }
+
+    .canvasFrame{
       width:100%;
-      aspect-ratio: 16/9;
-      min-height: 420px;
-      max-height: 72vh;
-      background: #0a0a0e;
-    }
-
-    canvas{
-      width:100%;
-      height:100%;
-      display:block;
-      /* important for touch gestures */
-      touch-action: none;
-    }
-
-    .hintbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:10px 12px;
-      border-top:1px solid var(--line);
-      background: rgba(0,0,0,.25);
-      flex-wrap:wrap;
-    }
-
-    .notes{
-      margin-top:12px;
-      border:1px solid var(--line);
-      border-radius:16px;
-      background: rgba(0,0,0,.18);
+      border-radius: 14px;
       overflow:hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: #0a0a0d;
+      touch-action: none; /* allow custom pinch/drag */
     }
-    .notes-head{
-      padding:10px 12px;
-      border-bottom:1px solid var(--line);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
+
+    canvas{ display:block; }
+
+    .notesPanel{
+      padding: 12px;
     }
-    .notes-title{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      font-weight:800;
-      color:var(--accent);
-    }
-    .notes-title span{
-      color:var(--text);
-      font-weight:800;
+    .notesPanel h2{
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      letter-spacing:0.2px;
     }
     textarea{
       width:100%;
-      min-height:140px;
-      resize:vertical;
-      border:0;
-      outline:none;
-      padding:12px;
-      background: transparent;
-      color: var(--text);
-      font-size:14px;
-      line-height:1.35;
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.35;
     }
 
-    .exports{
+    .exportRow{
       display:flex;
       gap:10px;
-      align-items:center;
       flex-wrap:wrap;
+      margin-top: 10px;
     }
 
-    .icon{
-      width:16px; height:16px; display:inline-block;
+    .hint{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+      line-height: 1.35;
     }
 
-    @media (max-width: 820px){
-      .brand{ min-width:auto; }
-      .brand-sub{ display:none; }
-      .canvas-wrap{ min-height: 360px; }
-      select, button{ padding:10px 12px; }
+    @media (min-width: 860px){
+      .layout{
+        grid-template-columns: 1fr 380px;
+        align-items:start;
+      }
+      .notesPanel{
+        position: sticky;
+        top: 14px;
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <div class="topbar">
+    <header>
       <div class="brand">
-        <div class="brand-badge">TactiGrid</div>
+        <div class="logoMark" aria-hidden="true"></div>
         <div>
-          <div class="brand-title">Drill Designer</div>
-          <div class="brand-sub">Add equipment, draw lines, export to PNG/PDF</div>
+          <h1>TactiGrid Drill Designer</h1>
+          <p class="sub">Design drills, add notes, export PNG/PDF</p>
         </div>
       </div>
 
-      <div class="toolbar">
-        <div class="group">
-          <div class="label">Pitch</div>
-          <select id="pitchType">
-            <option value="full" selected>Full pitch</option>
-            <option value="half">Half pitch</option>
-            <option value="blank">Blank</option>
-          </select>
-        </div>
-
-        <div class="group">
-          <div class="label">Mode</div>
-          <button id="modeEdit" class="btn-accent" title="Edit mode">
-            ✏️ <span>Edit</span>
-          </button>
-          <button id="modeAdd" class="btn-ghost" title="Add objects mode">
-            ➕ <span>Add</span>
-          </button>
-          <button id="modeLine" class="btn-ghost" title="Draw lines mode">
-            ✍️ <span>Lines</span>
-          </button>
-        </div>
-
-        <div class="group" id="addGroup">
-          <div class="label">Add objects</div>
-          <select id="addObject">
-            <option value="player">Player</option>
-            <option value="ball">Ball</option>
-            <option value="cone">Cone</option>
-            <option value="goal">Goal</option>
-            <option value="mannequin">Mannequin</option>
-            <option value="pole">Pole</option>
-            <option value="flag">Flag</option>
-            <option value="text">Text</option>
-          </select>
-          <input type="color" id="objColor" value="#ffd400" title="Object / line color"/>
-        </div>
-
-        <div class="group" id="lineGroup" style="display:none;">
-          <div class="label">Line type</div>
-          <select id="lineType">
-            <option value="straight">Straight</option>
-            <option value="arrow">Arrow</option>
-            <option value="dashed">Dashed</option>
-            <option value="curved">Curved</option>
-            <option value="free">Free draw</option>
-          </select>
-          <select id="lineWidth">
-            <option value="2">Thin</option>
-            <option value="4" selected>Medium</option>
-            <option value="7">Thick</option>
-          </select>
-        </div>
-
-        <div class="group">
-          <div class="label">Actions</div>
-          <button id="undoBtn" class="btn-ghost">↶ Undo</button>
-          <button id="redoBtn" class="btn-ghost">↷ Redo</button>
-          <button id="clearBtn" class="btn-danger">🗑 Clear</button>
-        </div>
+      <div class="topControls">
+        <button class="btn icon" id="zoomOutBtn" title="Zoom out">
+          <span class="ico">➖</span>
+        </button>
+        <button class="btn icon" id="zoomResetBtn" title="Reset view">
+          <span class="ico">⤾</span>
+        </button>
+        <button class="btn icon" id="zoomInBtn" title="Zoom in">
+          <span class="ico">➕</span>
+        </button>
       </div>
-    </div>
+    </header>
 
-    <div class="stage">
-      <div class="canvas-wrap">
-        <canvas id="c"></canvas>
+    <div class="panel toolbar" role="region" aria-label="Toolbar">
+      <div class="group">
+        <label for="pitchType">Pitch</label>
+        <select id="pitchType">
+          <option value="full" selected>Full Pitch</option>
+          <option value="half">Half Pitch (vertical)</option>
+          <option value="blank">Blank</option>
+        </select>
       </div>
-      <div class="hintbar">
-        <div class="pill">Tip: Double-click text to edit · Drag corners to resize · Drag rotate handle to rotate</div>
-        <div class="pill">Zoom: Mouse wheel · Pinch on touch · Two-finger pan</div>
+
+      <div class="group">
+        <button class="btn primary active" id="addModeBtn" title="Add objects/lines">
+          <span class="ico" aria-hidden="true">➕</span>
+          Add
+        </button>
+        <button class="btn" id="editModeBtn" title="Edit (select/move/resize/rotate)">
+          <span class="ico" aria-hidden="true">✏️</span>
+          Edit
+        </button>
+      </div>
+
+      <div class="group" id="addControls">
+        <label for="addType">Add</label>
+        <select id="addType">
+          <option value="player">Player</option>
+          <option value="ball">Ball</option>
+          <option value="cone">Cone</option>
+          <option value="goal">Goal</option>
+          <option value="mannequin">Mannequin</option>
+          <option value="pole">Pole</option>
+          <option value="flag">Flag</option>
+          <option value="text">Text</option>
+        </select>
+
+        <label for="lineType">Line</label>
+        <select id="lineType">
+          <option value="none" selected>—</option>
+          <option value="straight">Straight</option>
+          <option value="arrow">Arrow</option>
+          <option value="dashed">Dashed</option>
+          <option value="curved">Curved</option>
+          <option value="free">Free Draw</option>
+        </select>
+
+        <label for="strokeColor">Colour</label>
+        <input type="color" id="strokeColor" value="#ffd400" />
+      </div>
+
+      <div class="group">
+        <button class="btn" id="undoBtn" title="Undo">Undo</button>
+        <button class="btn" id="redoBtn" title="Redo">Redo</button>
+        <button class="btn" id="clearBtn" title="Clear all">Clear</button>
       </div>
     </div>
 
-    <div class="notes">
-      <div class="notes-head">
-        <div class="notes-title">📝 <span>Notes</span></div>
-        <div class="exports">
-          <button id="exportPNG" class="btn-accent" title="Export PNG">
-            📷 Export PNG
-          </button>
-          <button id="exportPDF" class="btn-accent" title="Export PDF">
-            📄 Export PDF
-          </button>
+    <div class="layout">
+      <div class="panel canvasPanel">
+        <div class="canvasFrame" id="canvasFrame">
+          <canvas id="c"></canvas>
+        </div>
+        <div class="hint">
+          Tips: Use <b>Edit</b> to move/resize/rotate. Pinch to zoom on mobile. Two-finger drag to pan.
         </div>
       </div>
-      <textarea id="notes" placeholder="Write your session notes here..."></textarea>
+
+      <div class="panel notesPanel">
+        <h2>Notes</h2>
+        <textarea id="notes" placeholder="Write session notes here... (included in PDF export)"></textarea>
+
+        <div class="exportRow">
+          <button class="btn primary" id="exportPngBtn" title="Export PNG">
+            <span class="ico" aria-hidden="true">🖼️</span>
+            Export PNG
+          </button>
+          <button class="btn primary" id="exportPdfBtn" title="Export PDF">
+            <span class="ico" aria-hidden="true">📄</span>
+            Export PDF
+          </button>
+        </div>
+
+        <div class="hint">
+          Export branding is included in <b>black</b> on the output.
+        </div>
+      </div>
     </div>
   </div>
 
 <script>
 (() => {
-  const canvas = document.getElementById('c');
-  const ctx = canvas.getContext('2d');
+  // ----------------------------
+  // Canvas / sizing
+  // ----------------------------
+  const canvasEl = document.getElementById('c');
+  const frameEl  = document.getElementById('canvasFrame');
 
-  // UI
-  const pitchTypeEl = document.getElementById('pitchType');
-  const modeEditBtn = document.getElementById('modeEdit');
-  const modeAddBtn  = document.getElementById('modeAdd');
-  const modeLineBtn = document.getElementById('modeLine');
-  const addGroup = document.getElementById('addGroup');
-  const lineGroup = document.getElementById('lineGroup');
-  const addObjectEl = document.getElementById('addObject');
-  const objColorEl = document.getElementById('objColor');
-  const lineTypeEl = document.getElementById('lineType');
-  const lineWidthEl = document.getElementById('lineWidth');
-  const undoBtn = document.getElementById('undoBtn');
-  const redoBtn = document.getElementById('redoBtn');
-  const clearBtn = document.getElementById('clearBtn');
-  const exportPNGBtn = document.getElementById('exportPNG');
-  const exportPDFBtn = document.getElementById('exportPDF');
-  const notesEl = document.getElementById('notes');
+  const canvas = new fabric.Canvas('c', {
+    backgroundColor: '#0a0a0d',
+    selection: false,
+    preserveObjectStacking: true,
+    stopContextMenu: true
+  });
 
-  // Modes: 'edit' | 'add' | 'line'
-  let mode = 'edit';
+  // Keep a pitch layer group (not selectable) so it always stays behind.
+  let pitchGroup = null;
 
-  // World transform (pan/zoom)
-  let view = { x: 0, y: 0, s: 1 };
+  // State
+  let mode = 'add'; // 'add' | 'edit'
+  let addType = 'player';
+  let lineType = 'none';
+  let strokeColor = document.getElementById('strokeColor').value;
 
-  // Content
-  let pitchType = 'full';
+  // Undo/redo (simple JSON snapshots)
+  let undoStack = [];
+  let redoStack = [];
+  const MAX_STACK = 40;
 
-  const objects = []; // equipment + text
-  const lines = [];   // line objects
-
-  // History
-  const undoStack = [];
-  const redoStack = [];
-
-  // Interaction state
-  let pointerDown = false;
-  let activeId = null;     // selected object id (equipment/text)
-  let activeLineId = null; // in-progress line id
-  let dragMode = null;     // 'move' | 'resize' | 'rotate' | 'pan'
-  let dragStart = null;
-  let startObj = null;
-
-  // Touch pinch
-  let touchState = null; // {id1,id2, d0, s0, mid0, view0}
-
-  // Utility
-  const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
-
-  function saveState() {
-    undoStack.push(JSON.stringify({ objects, lines, pitchType, view }));
-    if (undoStack.length > 80) undoStack.shift();
+  function pushHistory() {
     redoStack.length = 0;
+    const json = canvas.toJSON(['idTag', 'isPitch']);
+    undoStack.push(json);
+    if (undoStack.length > MAX_STACK) undoStack.shift();
   }
 
-  function restoreState(json) {
-    const st = JSON.parse(json);
-    objects.length = 0; objects.push(...st.objects);
-    lines.length = 0; lines.push(...st.lines);
-    pitchType = st.pitchType || 'full';
-    view = st.view || {x:0,y:0,s:1};
-    pitchTypeEl.value = pitchType;
-    activeId = null;
-    activeLineId = null;
-    dragMode = null;
-    draw();
-  }
-
-  // Canvas sizing
-  function resizeCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
-    canvas.width = Math.round(rect.width * dpr);
-    canvas.height = Math.round(rect.height * dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0); // draw in CSS pixels
-    draw();
-  }
-  window.addEventListener('resize', resizeCanvas);
-
-  // World/screen transforms
-  function screenToWorld(px, py) {
-    // px,py in CSS pixels
-    return {
-      x: (px - view.x) / view.s,
-      y: (py - view.y) / view.s
-    };
-  }
-  function worldToScreen(wx, wy) {
-    return {
-      x: wx * view.s + view.x,
-      y: wy * view.s + view.y
-    };
-  }
-
-  // Pitch geometry in world units (we map to canvas via view transform)
-  // We'll define a "field box" for each pitch type that fills the canvas nicely.
-  function getPitchBox() {
-    // returns {x,y,w,h} in world coordinates
-    // We'll use a consistent world size then scale via view.
-    if (pitchType === 'blank') return { x: 0, y: 0, w: 1200, h: 675 };
-
-    if (pitchType === 'full') {
-      return { x: 0, y: 0, w: 1200, h: 675 };
-    }
-
-    // HALF PITCH (vertical): top has goal/boxes, bottom is halfway line
-    // Use same width, full height (fills), but only half-length markings:
-    return { x: 0, y: 0, w: 900, h: 1200 }; // tall world, will fill vertically
-  }
-
-  function fitPitchToCanvas() {
-    // Fit pitch box into canvas view initially, keeping some padding
-    const rect = canvas.getBoundingClientRect();
-    const cw = rect.width, ch = rect.height;
-    const pb = getPitchBox();
-    const pad = 18;
-
-    const sx = (cw - pad*2) / pb.w;
-    const sy = (ch - pad*2) / pb.h;
-    const s = Math.min(sx, sy);
-
-    view.s = s;
-    view.x = pad + (cw - pad*2 - pb.w*s)/2 - pb.x*s;
-    view.y = pad + (ch - pad*2 - pb.h*s)/2 - pb.y*s;
-  }
-
-  // Drawing helpers
-  function withView(fn) {
-    ctx.save();
-    ctx.translate(view.x, view.y);
-    ctx.scale(view.s, view.s);
-    fn();
-    ctx.restore();
-  }
-
-  function drawPitch() {
-    if (pitchType === 'blank') return;
-
-    const pb = getPitchBox();
-
-    // Grass
-    const stripeCount = 14;
-    const stripeW = pb.w / stripeCount;
-
-    // base gradient
-    const g = ctx.createLinearGradient(pb.x, pb.y, pb.x, pb.y + pb.h);
-    g.addColorStop(0, '#2e6b43');
-    g.addColorStop(1, '#245237');
-    ctx.fillStyle = g;
-    ctx.fillRect(pb.x, pb.y, pb.w, pb.h);
-
-    // stripes
-    for (let i=0;i<stripeCount;i++){
-      ctx.fillStyle = (i%2===0) ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
-      ctx.fillRect(pb.x + i*stripeW, pb.y, stripeW, pb.h);
-    }
-
-    // lines
-    const lineCol = 'rgba(245,245,245,0.85)';
-    ctx.strokeStyle = lineCol;
-    ctx.lineWidth = 4;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-
-    // outer
-    ctx.strokeRect(pb.x + 12, pb.y + 12, pb.w - 24, pb.h - 24);
-
-    if (pitchType === 'full') {
-      const x0 = pb.x + 12, y0 = pb.y + 12, w = pb.w - 24, h = pb.h - 24;
-
-      // halfway line
-      ctx.beginPath();
-      ctx.moveTo(x0 + w/2, y0);
-      ctx.lineTo(x0 + w/2, y0 + h);
-      ctx.stroke();
-
-      // center circle + spot
-      ctx.beginPath();
-      ctx.arc(x0 + w/2, y0 + h/2, h*0.14, 0, Math.PI*2);
-      ctx.stroke();
-      ctx.fillStyle = lineCol;
-      ctx.beginPath();
-      ctx.arc(x0 + w/2, y0 + h/2, 4, 0, Math.PI*2);
-      ctx.fill();
-
-      // penalty areas + 6-yard + spots BOTH ends (fix missing half)
-      drawGoalEndFull(x0, y0, w, h, 'left');
-      drawGoalEndFull(x0, y0, w, h, 'right');
-    }
-
-    if (pitchType === 'half') {
-      // vertical half pitch: goal end at TOP, halfway line at bottom
-      const x0 = pb.x + 12, y0 = pb.y + 12, w = pb.w - 24, h = pb.h - 24;
-
-      // halfway line (bottom)
-      ctx.beginPath();
-      ctx.moveTo(x0, y0 + h);
-      ctx.lineTo(x0 + w, y0 + h);
-      ctx.stroke();
-
-      // center circle "half" at bottom
-      ctx.beginPath();
-      ctx.arc(x0 + w/2, y0 + h, w*0.18, Math.PI, Math.PI*2);
-      ctx.stroke();
-
-      // draw top goal end boxes
-      drawGoalEndHalfVertical(x0, y0, w, h);
-    }
-
-    function drawGoalEndFull(x0,y0,w,h, side){
-      // Dimensions approximate proportions for a nice diagram
-      const paW = w*0.16;      // penalty area depth
-      const paH = h*0.56;      // penalty area height
-      const gaW = w*0.07;      // goal area depth
-      const gaH = h*0.28;      // goal area height
-      const spotD = w*0.11;    // penalty spot distance from goal line
-
-      const cx = x0 + (side==='left' ? 0 : w);
-      const topPA = y0 + (h - paH)/2;
-      const topGA = y0 + (h - gaH)/2;
-
-      // penalty area
-      ctx.strokeRect(
-        side==='left' ? cx : cx - paW,
-        topPA,
-        paW,
-        paH
-      );
-
-      // 6-yard
-      ctx.strokeRect(
-        side==='left' ? cx : cx - gaW,
-        topGA,
-        gaW,
-        gaH
-      );
-
-      // penalty spot
-      ctx.fillStyle = 'rgba(245,245,245,0.85)';
-      ctx.beginPath();
-      ctx.arc(side==='left' ? (x0 + spotD) : (x0 + w - spotD), y0 + h/2, 4, 0, Math.PI*2);
-      ctx.fill();
-
-      // arc (penalty arc) - optional, keep subtle but no corner arcs
-      ctx.strokeStyle = 'rgba(245,245,245,0.55)';
-      ctx.lineWidth = 3;
-      const arcR = h*0.14;
-      const arcX = side==='left' ? (x0 + spotD) : (x0 + w - spotD);
-      ctx.beginPath();
-      if (side==='left'){
-        ctx.arc(arcX, y0 + h/2, arcR, -Math.PI/3, Math.PI/3);
-      } else {
-        ctx.arc(arcX, y0 + h/2, arcR, Math.PI - Math.PI/3, Math.PI + Math.PI/3);
-      }
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(245,245,245,0.85)';
-      ctx.lineWidth = 4;
-    }
-
-    function drawGoalEndHalfVertical(x0,y0,w,h){
-      // Top goal end boxes on vertical half pitch
-      const paD = h*0.22;     // penalty area depth (down from top)
-      const paW = w*0.62;
-      const gaD = h*0.10;
-      const gaW = w*0.34;
-      const spotD = h*0.16;
-
-      // penalty area
-      ctx.strokeRect(
-        x0 + (w - paW)/2,
-        y0,
-        paW,
-        paD
-      );
-
-      // 6-yard
-      ctx.strokeRect(
-        x0 + (w - gaW)/2,
-        y0,
-        gaW,
-        gaD
-      );
-
-      // penalty spot
-      ctx.fillStyle = 'rgba(245,245,245,0.85)';
-      ctx.beginPath();
-      ctx.arc(x0 + w/2, y0 + spotD, 4, 0, Math.PI*2);
-      ctx.fill();
-
-      // penalty arc (curving outside the box)
-      ctx.strokeStyle = 'rgba(245,245,245,0.55)';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(x0 + w/2, y0 + spotD, w*0.20, Math.PI + Math.PI/6, Math.PI*2 - Math.PI/6);
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(245,245,245,0.85)';
-      ctx.lineWidth = 4;
-    }
-  }
-
-  // Object drawing (icons are drawn vector-style so they export clean)
-  function drawObject(o, exporting=false) {
-    const col = o.color || '#ffd400';
-    const x = o.x, y = o.y;
-    const r = o.r || 18;
-    const s = o.scale ?? 1;
-    const rot = o.rot || 0;
-
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(rot);
-    ctx.scale(s, s);
-
-    if (o.type === 'player') {
-      // Player disc
-      ctx.fillStyle = col;
-      ctx.beginPath();
-      ctx.arc(0, 0, r, 0, Math.PI*2);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-
-    if (o.type === 'ball') {
-      // Football: white with black patches
-      const R = r * 0.95;
-      ctx.fillStyle = '#f7f7f7';
-      ctx.beginPath();
-      ctx.arc(0, 0, R, 0, Math.PI*2);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // center pentagon
-      ctx.fillStyle = '#1b1b1b';
-      ctx.beginPath();
-      for (let i=0;i<5;i++){
-        const a = -Math.PI/2 + i*(Math.PI*2/5);
-        const px = Math.cos(a) * (R*0.38);
-        const py = Math.sin(a) * (R*0.38);
-        if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
-      }
-      ctx.closePath();
-      ctx.fill();
-
-      // a few panels
-      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-      ctx.lineWidth = 1.5;
-      for (let i=0;i<5;i++){
-        const a = -Math.PI/2 + i*(Math.PI*2/5);
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(a)*(R*0.38), Math.sin(a)*(R*0.38));
-        ctx.lineTo(Math.cos(a)*(R*0.82), Math.sin(a)*(R*0.82));
-        ctx.stroke();
-      }
-    }
-
-    if (o.type === 'cone') {
-      // cone triangle
-      ctx.fillStyle = col;
-      ctx.beginPath();
-      ctx.moveTo(0, -r);
-      ctx.lineTo(r, r);
-      ctx.lineTo(-r, r);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-
-    if (o.type === 'goal') {
-      // revert to "proper goal" look: frame + net
-      const w = r*2.6, h = r*1.7;
-      ctx.strokeStyle = col;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(-w/2, -h/2, w, h);
-
-      // depth post
-      ctx.beginPath();
-      ctx.moveTo(w/2, -h/2);
-      ctx.lineTo(w/2 + r*0.55, -h/2 - r*0.35);
-      ctx.lineTo(w/2 + r*0.55, h/2 - r*0.35);
-      ctx.lineTo(w/2, h/2);
-      ctx.stroke();
-
-      // net
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-      ctx.lineWidth = 1;
-      for (let i=1;i<=5;i++){
-        const xx = -w/2 + (w*i/6);
-        ctx.beginPath();
-        ctx.moveTo(xx, -h/2);
-        ctx.lineTo(xx, h/2);
-        ctx.stroke();
-      }
-      for (let i=1;i<=4;i++){
-        const yy = -h/2 + (h*i/5);
-        ctx.beginPath();
-        ctx.moveTo(-w/2, yy);
-        ctx.lineTo(w/2, yy);
-        ctx.stroke();
-      }
-    }
-
-    if (o.type === 'mannequin') {
-      // reverted mannequin: training dummy silhouette (simple + clean)
-      ctx.fillStyle = col;
-      const w = r*1.1, h = r*2.8;
-      roundRect(-w/2, -h/2, w, h, r*0.35, true, false);
-
-      // shoulders
-      ctx.beginPath();
-      ctx.moveTo(-w/2, -h/2 + r*0.35);
-      ctx.quadraticCurveTo(0, -h/2 - r*0.35, w/2, -h/2 + r*0.35);
-      ctx.lineTo(w/2, -h/2 + r*0.7);
-      ctx.quadraticCurveTo(0, -h/2, -w/2, -h/2 + r*0.7);
-      ctx.closePath();
-      ctx.fill();
-
-      // cutout "holes" (subtle)
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(0, -h*0.12, r*0.32, 0, Math.PI*2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(0, h*0.08, r*0.28, 0, Math.PI*2);
-      ctx.fill();
-      ctx.globalCompositeOperation = 'source-over';
-
-      // outline
-      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-      ctx.lineWidth = 2;
-      roundRect(-w/2, -h/2, w, h, r*0.35, false, true);
-    }
-
-    if (o.type === 'pole') {
-      // pole: tall rounded line + base
-      ctx.strokeStyle = col;
-      ctx.lineWidth = 5;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(0, -r*2.2);
-      ctx.lineTo(0, r*2.2);
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.beginPath();
-      ctx.ellipse(0, r*2.25, r*0.6, r*0.25, 0, 0, Math.PI*2);
-      ctx.fill();
-    }
-
-    if (o.type === 'flag') {
-      // improved flag: pole + triangular pennant with notch
-      ctx.strokeStyle = col;
-      ctx.lineWidth = 4;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(-r*0.6, -r*2.2);
-      ctx.lineTo(-r*0.6, r*2.2);
-      ctx.stroke();
-
-      ctx.fillStyle = col;
-      ctx.beginPath();
-      ctx.moveTo(-r*0.55, -r*2.0);
-      ctx.lineTo(r*1.6, -r*1.45);
-      ctx.lineTo(-r*0.55, -r*0.95);
-      ctx.lineTo(r*0.5, -r*1.45); // notch
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-
-    if (o.type === 'text') {
-      ctx.fillStyle = col;
-      ctx.font = `700 ${Math.max(14, r)}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(o.text || 'Text', 0, 0);
-    }
-
-    ctx.restore();
-
-    function roundRect(x, y, w, h, rr, fill, stroke){
-      const r2 = Math.min(rr, w/2, h/2);
-      ctx.beginPath();
-      ctx.moveTo(x+r2, y);
-      ctx.arcTo(x+w, y, x+w, y+h, r2);
-      ctx.arcTo(x+w, y+h, x, y+h, r2);
-      ctx.arcTo(x, y+h, x, y, r2);
-      ctx.arcTo(x, y, x+w, y, r2);
-      ctx.closePath();
-      if (fill) ctx.fill();
-      if (stroke) ctx.stroke();
-    }
-  }
-
-  function drawLine(L) {
-    const col = L.color || '#ffd400';
-    ctx.strokeStyle = col;
-    ctx.lineWidth = L.w || 4;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-
-    const pts = L.pts || [];
-    if (pts.length < 2) return;
-
-    if (L.type === 'dashed') ctx.setLineDash([10, 10]);
-    else ctx.setLineDash([]);
-
-    if (L.type === 'free') {
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      return;
-    }
-
-    const a = pts[0], b = pts[pts.length-1];
-
-    if (L.type === 'curved') {
-      const mid = { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
-      const dx = b.x - a.x, dy = b.y - a.y;
-      const len = Math.max(1, Math.hypot(dx,dy));
-      // curve "bulge"
-      const nx = -dy/len, ny = dx/len;
-      const bulge = Math.min(120, len*0.22);
-      const c = { x: mid.x + nx*bulge, y: mid.y + ny*bulge };
-
-      ctx.beginPath();
-      ctx.moveTo(a.x,a.y);
-      ctx.quadraticCurveTo(c.x,c.y,b.x,b.y);
-      ctx.stroke();
-
-      if (L.type2 === 'arrow' || L.type === 'arrow') drawArrowHeadOnCurve(a,b,c,col,L.w||4);
-      return;
-    }
-
-    // straight / arrow / dashed
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    if (L.type === 'arrow') drawArrowHead(a,b,col,L.w||4);
-  }
-
-  function drawArrowHead(a,b,col,w){
-    const ang = Math.atan2(b.y-a.y, b.x-a.x);
-    const size = 14 + w*1.2;
-    ctx.fillStyle = col;
-    ctx.beginPath();
-    ctx.moveTo(b.x, b.y);
-    ctx.lineTo(b.x - Math.cos(ang - Math.PI/6)*size, b.y - Math.sin(ang - Math.PI/6)*size);
-    ctx.lineTo(b.x - Math.cos(ang + Math.PI/6)*size, b.y - Math.sin(ang + Math.PI/6)*size);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  function drawArrowHeadOnCurve(a,b,c,col,w){
-    // approximate tangent at end of quadratic curve
-    const t = 0.98;
-    const dx = 2*(1-t)*(c.x-a.x) + 2*t*(b.x-c.x);
-    const dy = 2*(1-t)*(c.y-a.y) + 2*t*(b.y-c.y);
-    const ang = Math.atan2(dy,dx);
-    const size = 14 + w*1.2;
-    ctx.fillStyle = col;
-    ctx.beginPath();
-    ctx.moveTo(b.x, b.y);
-    ctx.lineTo(b.x - Math.cos(ang - Math.PI/6)*size, b.y - Math.sin(ang - Math.PI/6)*size);
-    ctx.lineTo(b.x - Math.cos(ang + Math.PI/6)*size, b.y - Math.sin(ang + Math.PI/6)*size);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  function drawSelection(o){
-    // bounding box + handles in world coords
-    const bb = getObjectBounds(o);
-    if (!bb) return;
-
-    ctx.save();
-    ctx.translate(o.x, o.y);
-    ctx.rotate(o.rot||0);
-    ctx.scale(o.scale??1, o.scale??1);
-
-    const x = bb.x, y = bb.y, w = bb.w, h = bb.h;
-
-    ctx.strokeStyle = 'rgba(255,212,0,0.95)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 6]);
-    ctx.strokeRect(x, y, w, h);
-    ctx.setLineDash([]);
-
-    // resize handles (corners)
-    const hs = 8;
-    ctx.fillStyle = '#ffd400';
-    const corners = [
-      {x:x, y:y, t:'nw'},
-      {x:x+w, y:y, t:'ne'},
-      {x:x+w, y:y+h, t:'se'},
-      {x:x, y:y+h, t:'sw'}
-    ];
-    for (const c of corners){
-      ctx.beginPath();
-      ctx.rect(c.x - hs/2, c.y - hs/2, hs, hs);
-      ctx.fill();
-    }
-
-    // rotate handle (top-middle)
-    const rx = x + w/2, ry = y - 18;
-    ctx.beginPath();
-    ctx.arc(rx, ry, 7, 0, Math.PI*2);
-    ctx.fill();
-
-    // connector
-    ctx.strokeStyle = 'rgba(255,212,0,0.6)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x+w/2, y);
-    ctx.lineTo(rx, ry);
-    ctx.stroke();
-
-    ctx.restore();
-  }
-
-  function getObjectBounds(o){
-    const r = o.r || 18;
-    if (o.type === 'player' || o.type === 'ball' || o.type === 'cone') {
-      return { x:-r, y:-r, w:r*2, h:r*2 };
-    }
-    if (o.type === 'goal'){
-      return { x:-(r*2.6)/2, y:-(r*1.7)/2, w:r*2.6, h:r*1.7 };
-    }
-    if (o.type === 'mannequin'){
-      return { x:-(r*1.1)/2, y:-(r*2.8)/2, w:r*1.1, h:r*2.8 };
-    }
-    if (o.type === 'pole'){
-      return { x:-r*0.5, y:-r*2.25, w:r, h:r*4.5 };
-    }
-    if (o.type === 'flag'){
-      return { x:-r*0.8, y:-r*2.25, w:r*2.6, h:r*4.5 };
-    }
-    if (o.type === 'text'){
-      // approximate
-      return { x:-r*2.0, y:-r*0.8, w:r*4.0, h:r*1.6 };
-    }
-    return null;
-  }
-
-  function hitTestObject(wx, wy){
-    // top-most hit
-    for (let i=objects.length-1;i>=0;i--){
-      const o = objects[i];
-      // transform point into object local space (inverse rot/scale)
-      const s = o.scale ?? 1;
-      const rot = o.rot || 0;
-      const dx = wx - o.x;
-      const dy = wy - o.y;
-      const cr = Math.cos(-rot), sr = Math.sin(-rot);
-      const lx = (dx*cr - dy*sr) / s;
-      const ly = (dx*sr + dy*cr) / s;
-
-      const bb = getObjectBounds(o);
-      if (!bb) continue;
-      if (lx >= bb.x && lx <= bb.x+bb.w && ly >= bb.y && ly <= bb.y+bb.h){
-        return o.id;
-      }
-    }
-    return null;
-  }
-
-  function hitTestHandle(o, wx, wy){
-    if (!o) return null;
-    const bb = getObjectBounds(o);
-    if (!bb) return null;
-
-    const s = o.scale ?? 1;
-    const rot = o.rot || 0;
-    const dx = wx - o.x;
-    const dy = wy - o.y;
-    const cr = Math.cos(-rot), sr = Math.sin(-rot);
-    const lx = (dx*cr - dy*sr) / s;
-    const ly = (dx*sr + dy*cr) / s;
-
-    const x = bb.x, y = bb.y, w = bb.w, h = bb.h;
-    const hs = 10; // handle size in local coords
-
-    const handles = [
-      {x:x, y:y, t:'resize'},
-      {x:x+w, y:y, t:'resize'},
-      {x:x+w, y:y+h, t:'resize'},
-      {x:x, y:y+h, t:'resize'},
-    ];
-
-    for (const hnd of handles){
-      if (Math.abs(lx - hnd.x) <= hs && Math.abs(ly - hnd.y) <= hs) return 'resize';
-    }
-
-    const rx = x + w/2, ry = y - 18;
-    if (Math.hypot(lx-rx, ly-ry) <= 10) return 'rotate';
-
-    // inside bounds -> move
-    if (lx >= x && lx <= x+w && ly >= y && ly <= y+h) return 'move';
-
-    return null;
-  }
-
-  // Main draw
-  function draw() {
-    const rect = canvas.getBoundingClientRect();
-    ctx.clearRect(0,0,rect.width,rect.height);
-
-    withView(() => {
-      // pitch background + markings
-      drawPitch();
-
-      // lines (behind objects)
-      for (const L of lines) drawLine(L);
-
-      // objects
-      for (const o of objects) drawObject(o);
-
-      // selection
-      if (activeId) {
-        const o = objects.find(x => x.id === activeId);
-        if (o) drawSelection(o);
-      }
+  function loadFrom(json) {
+    canvas.loadFromJSON(json, () => {
+      // Ensure pitch objects remain non-selectable
+      canvas.getObjects().forEach(o => {
+        if (o.isPitch) {
+          o.selectable = false;
+          o.evented = false;
+          o.excludeFromExport = false;
+        }
+      });
+      canvas.requestRenderAll();
     });
   }
 
-  // Modes UI
-  function setMode(m){
-    mode = m;
-    modeEditBtn.classList.toggle('btn-accent', mode==='edit');
-    modeAddBtn.classList.toggle('btn-accent', mode==='add');
-    modeLineBtn.classList.toggle('btn-accent', mode==='line');
-
-    modeEditBtn.classList.toggle('btn-ghost', mode!=='edit');
-    modeAddBtn.classList.toggle('btn-ghost', mode!=='add');
-    modeLineBtn.classList.toggle('btn-ghost', mode!=='line');
-
-    addGroup.style.display = (mode==='add') ? '' : 'none';
-    lineGroup.style.display = (mode==='line') ? '' : 'none';
-
-    activeLineId = null;
-    dragMode = null;
-    draw();
+  // Initial history state
+  function resetHistory() {
+    undoStack = [];
+    redoStack = [];
+    pushHistory();
   }
 
-  modeEditBtn.addEventListener('click', () => setMode('edit'));
-  modeAddBtn.addEventListener('click', () => setMode('add'));
-  modeLineBtn.addEventListener('click', () => setMode('line'));
+  // ----------------------------
+  // Responsive sizing + pitch types
+  // ----------------------------
+  const pitchTypeSel = document.getElementById('pitchType');
 
-  pitchTypeEl.addEventListener('change', () => {
-    pitchType = pitchTypeEl.value;
-    fitPitchToCanvas();
-    saveState();
-    draw();
-  });
+  function fitCanvasToFrame() {
+    const r = frameEl.getBoundingClientRect();
+    const w = Math.max(320, Math.floor(r.width));
 
-  // Actions
-  undoBtn.addEventListener('click', () => {
-    if (!undoStack.length) return;
-    redoStack.push(JSON.stringify({ objects, lines, pitchType, view }));
-    restoreState(undoStack.pop());
-  });
+    const type = pitchTypeSel.value;
+    // Full pitch: wide
+    // Half pitch: vertical AND canvas itself is half pitch (taller feel but only half length)
+    // Blank: same as full
+    let h;
+    if (type === 'half') {
+      // vertical half pitch: make canvas taller relative to width
+      h = Math.floor(w * 1.25);
+    } else {
+      h = Math.floor(w * 0.58); // similar to a full pitch aspect
+    }
 
-  redoBtn.addEventListener('click', () => {
-    if (!redoStack.length) return;
-    undoStack.push(JSON.stringify({ objects, lines, pitchType, view }));
-    restoreState(redoStack.pop());
-  });
+    canvas.setWidth(w);
+    canvas.setHeight(h);
+    canvas.calcOffset();
+    canvas.requestRenderAll();
+  }
 
-  clearBtn.addEventListener('click', () => {
-    saveState();
-    objects.length = 0;
-    lines.length = 0;
-    activeId = null;
-    activeLineId = null;
-    dragMode = null;
-    draw();
-  });
+  function clearPitchOnly() {
+    if (!pitchGroup) return;
+    canvas.remove(pitchGroup);
+    pitchGroup = null;
+  }
 
-  // Text editing (double click)
-  canvas.addEventListener('dblclick', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-    const w = screenToWorld(sx, sy);
-    const id = hitTestObject(w.x, w.y);
-    if (!id) return;
-    const o = objects.find(x => x.id === id);
-    if (!o || o.type !== 'text') return;
+  function makePitch(type) {
+    clearPitchOnly();
 
-    const next = prompt('Edit text:', o.text || 'Text');
-    if (next === null) return;
-    saveState();
-    o.text = next;
-    draw();
-  });
+    if (type === 'blank') {
+      canvas.setBackgroundColor('#0a0a0d', canvas.requestRenderAll.bind(canvas));
+      return;
+    }
 
-  // Pointer helpers
-  function getPointer(e){
-    const rect = canvas.getBoundingClientRect();
-    if (e.touches && e.touches.length){
-      return Array.from(e.touches).map(t => ({
-        id: t.identifier,
-        sx: t.clientX - rect.left,
-        sy: t.clientY - rect.top
+    // Pitch drawing parameters
+    const W = canvas.getWidth();
+    const H = canvas.getHeight();
+    const margin = Math.max(18, Math.floor(Math.min(W,H) * 0.04));
+
+    // pitch colors
+    const pitchFill = '#1d6a3a';
+    const pitchStripe = '#1a6135';
+    const lineColor = '#f7f7f7';
+
+    // Base field rect
+    const field = new fabric.Rect({
+      left: margin,
+      top: margin,
+      width: W - margin*2,
+      height: H - margin*2,
+      fill: pitchFill,
+      rx: 6, ry: 6,
+      selectable: false,
+      evented: false
+    });
+
+    // Stripes
+    const stripes = [];
+    const stripeCount = 10;
+    const stripeW = (field.width) / stripeCount;
+    for (let i=0;i<stripeCount;i++){
+      stripes.push(new fabric.Rect({
+        left: field.left + i*stripeW,
+        top: field.top,
+        width: stripeW,
+        height: field.height,
+        fill: i%2===0 ? pitchFill : pitchStripe,
+        selectable:false,
+        evented:false
       }));
     }
-    return [{
-      id: 'mouse',
-      sx: e.clientX - rect.left,
-      sy: e.clientY - rect.top
-    }];
+
+    // Helper to create white lines
+    const L = (...args) => new fabric.Line(args, {
+      stroke: lineColor,
+      strokeWidth: 2,
+      selectable:false,
+      evented:false
+    });
+
+    const R = (opts) => new fabric.Rect({
+      fill: 'transparent',
+      stroke: lineColor,
+      strokeWidth: 2,
+      selectable:false,
+      evented:false,
+      ...opts
+    });
+
+    const C = (opts) => new fabric.Circle({
+      fill: 'transparent',
+      stroke: lineColor,
+      strokeWidth: 2,
+      selectable:false,
+      evented:false,
+      ...opts
+    });
+
+    const objects = [...stripes, field];
+
+    // Outer boundary
+    objects.push(R({
+      left: field.left,
+      top: field.top,
+      width: field.width,
+      height: field.height
+    }));
+
+    if (type === 'full') {
+      // Halfway line
+      objects.push(L(field.left, field.top + field.height/2, field.left + field.width, field.top + field.height/2));
+
+      // Centre circle + spot
+      const ccR = Math.min(field.width, field.height) * 0.12;
+      objects.push(C({ left: field.left + field.width/2 - ccR, top: field.top + field.height/2 - ccR, radius: ccR }));
+      objects.push(new fabric.Circle({
+        left: field.left + field.width/2 - 2,
+        top: field.top + field.height/2 - 2,
+        radius: 2,
+        fill: lineColor,
+        stroke: lineColor,
+        selectable:false, evented:false
+      }));
+
+      // Penalty areas / goals at BOTH ends (this fixes “missing boxes on half the pitch” in full pitch)
+      const boxW = field.width * 0.55;
+      const boxH = field.height * 0.18;
+      const sixW = field.width * 0.30;
+      const sixH = field.height * 0.07;
+      const goalW = field.width * 0.18;
+      const goalH = field.height * 0.02;
+
+      // Top end
+      objects.push(R({
+        left: field.left + (field.width - boxW)/2,
+        top: field.top,
+        width: boxW,
+        height: boxH
+      }));
+      objects.push(R({
+        left: field.left + (field.width - sixW)/2,
+        top: field.top,
+        width: sixW,
+        height: sixH
+      }));
+      // Goal (simple)
+      objects.push(R({
+        left: field.left + (field.width - goalW)/2,
+        top: field.top - goalH,
+        width: goalW,
+        height: goalH
+      }));
+      // Penalty spot
+      objects.push(new fabric.Circle({
+        left: field.left + field.width/2 - 2,
+        top: field.top + boxH*0.62 - 2,
+        radius: 2,
+        fill: lineColor,
+        stroke: lineColor,
+        selectable:false, evented:false
+      }));
+
+      // Bottom end
+      objects.push(R({
+        left: field.left + (field.width - boxW)/2,
+        top: field.top + field.height - boxH,
+        width: boxW,
+        height: boxH
+      }));
+      objects.push(R({
+        left: field.left + (field.width - sixW)/2,
+        top: field.top + field.height - sixH,
+        width: sixW,
+        height: sixH
+      }));
+      objects.push(R({
+        left: field.left + (field.width - goalW)/2,
+        top: field.top + field.height,
+        width: goalW,
+        height: goalH
+      }));
+      objects.push(new fabric.Circle({
+        left: field.left + field.width/2 - 2,
+        top: field.top + field.height - boxH*0.62 - 2,
+        radius: 2,
+        fill: lineColor,
+        stroke: lineColor,
+        selectable:false, evented:false
+      }));
+    }
+
+    if (type === 'half') {
+      // TRUE HALF PITCH (vertical): from halfway line down to one goal.
+      // Canvas is already taller, and we draw: halfway line at bottom, goal at top.
+      // No random corner arcs.
+
+      // Halfway line across the bottom edge of field
+      objects.push(L(field.left, field.top + field.height, field.left + field.width, field.top + field.height));
+
+      // Centre circle is off-canvas in half pitch; show just the centre arc at the bottom edge (simple, no corner weirdness)
+      const ccR = Math.min(field.width, field.height) * 0.20;
+      const arcPath = describeArc(field.left + field.width/2, field.top + field.height, ccR, 180, 0);
+      objects.push(new fabric.Path(arcPath, {
+        fill: '',
+        stroke: lineColor,
+        strokeWidth: 2,
+        selectable:false,
+        evented:false
+      }));
+
+      // Penalty area at TOP end
+      const boxW = field.width * 0.62;
+      const boxH = field.height * 0.26;
+      const sixW = field.width * 0.34;
+      const sixH = field.height * 0.10;
+      const goalW = field.width * 0.22;
+      const goalH = field.height * 0.03;
+
+      objects.push(R({
+        left: field.left + (field.width - boxW)/2,
+        top: field.top,
+        width: boxW,
+        height: boxH
+      }));
+      objects.push(R({
+        left: field.left + (field.width - sixW)/2,
+        top: field.top,
+        width: sixW,
+        height: sixH
+      }));
+      objects.push(R({
+        left: field.left + (field.width - goalW)/2,
+        top: field.top - goalH,
+        width: goalW,
+        height: goalH
+      }));
+      // Penalty spot
+      objects.push(new fabric.Circle({
+        left: field.left + field.width/2 - 2,
+        top: field.top + boxH*0.62 - 2,
+        radius: 2,
+        fill: lineColor,
+        stroke: lineColor,
+        selectable:false, evented:false
+      }));
+    }
+
+    // Mark pitch objects
+    pitchGroup = new fabric.Group(objects, {
+      selectable:false,
+      evented:false
+    });
+    pitchGroup.isPitch = true;
+    pitchGroup.excludeFromExport = false;
+
+    canvas.add(pitchGroup);
+    canvas.sendToBack(pitchGroup);
+    canvas.requestRenderAll();
   }
 
-  // Mouse wheel zoom
-  canvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
+  // Arc helper (SVG path)
+  function polarToCartesian(cx, cy, r, angleDeg) {
+    const rad = (angleDeg - 90) * Math.PI / 180.0;
+    return { x: cx + (r * Math.cos(rad)), y: cy + (r * Math.sin(rad)) };
+  }
+  function describeArc(cx, cy, r, startAngle, endAngle){
+    const start = polarToCartesian(cx, cy, r, endAngle);
+    const end   = polarToCartesian(cx, cy, r, startAngle);
+    const largeArcFlag = (endAngle - startAngle) <= 180 ? "0" : "1";
+    return [
+      "M", start.x, start.y,
+      "A", r, r, 0, largeArcFlag, 0, end.x, end.y
+    ].join(" ");
+  }
 
-    const before = screenToWorld(mx, my);
-    const delta = -e.deltaY;
-    const factor = Math.exp(delta * 0.0012);
+  // Rebuild pitch on resize/type change without touching drawn objects
+  function rebuildPitchPreserveObjects() {
+    // Grab non-pitch objects
+    const keep = canvas.getObjects().filter(o => !o.isPitch);
+    clearPitchOnly();
+    fitCanvasToFrame();
+    makePitch(pitchTypeSel.value);
+    // Re-add keep objects on top
+    keep.forEach(o => canvas.add(o));
+    canvas.requestRenderAll();
+  }
 
-    const nextS = clamp(view.s * factor, 0.25, 4.5);
-    view.s = nextS;
+  // ----------------------------
+  // Simple “v1 style” icons (ONLY mannequin + goal updated as requested)
+  // ----------------------------
+  function makePlayer(x,y){
+    return new fabric.Circle({
+      left: x-16, top: y-16, radius: 16,
+      fill: '#ffd400',
+      stroke: '#111',
+      strokeWidth: 2
+    });
+  }
 
-    // keep point under mouse stable
-    const after = screenToWorld(mx, my);
-    view.x += (after.x - before.x) * view.s;
-    view.y += (after.y - before.y) * view.s;
+  function makeFootball(x,y){
+    // football-like: white circle + black patches
+    const base = new fabric.Circle({
+      left: x-14, top: y-14, radius: 14,
+      fill: '#f6f6f6',
+      stroke: '#111',
+      strokeWidth: 2
+    });
+    const patch = new fabric.RegularPolygon({
+      left: x-6, top: y-6,
+      radius: 6, sides: 5,
+      fill: '#111'
+    });
+    const p2 = new fabric.Circle({ left:x-12, top:y-2, radius:3, fill:'#111' });
+    const p3 = new fabric.Circle({ left:x+6, top:y-2, radius:3, fill:'#111' });
+    const p4 = new fabric.Circle({ left:x-3, top:y+7, radius:3, fill:'#111' });
+    return new fabric.Group([base, patch, p2, p3, p4], { left:x, top:y, originX:'center', originY:'center' });
+  }
 
-    draw();
-  }, { passive:false });
+  function makeCone(x,y){
+    const tri = new fabric.Triangle({
+      left: x-14, top: y-16, width: 28, height: 32,
+      fill: '#ff9f1a',
+      stroke: '#111',
+      strokeWidth: 2
+    });
+    return tri;
+  }
 
-  // Touch pinch zoom + pan
-  canvas.addEventListener('touchstart', (e) => {
-    const pts = getPointer(e);
-    if (pts.length === 2){
-      const d = dist(pts[0], pts[1]);
-      touchState = {
-        id1: pts[0].id, id2: pts[1].id,
-        d0: d,
-        s0: view.s,
-        mid0: { x:(pts[0].sx+pts[1].sx)/2, y:(pts[0].sy+pts[1].sy)/2 },
-        view0: { ...view }
-      };
+  // ✅ Mannequin: revert to simple v1-style (head + torso silhouette)
+  function makeMannequin(x,y){
+    const head = new fabric.Circle({
+      left: x-7, top: y-26, radius: 7,
+      fill: '#e6e6e6',
+      stroke: '#111',
+      strokeWidth: 2
+    });
+    const body = new fabric.Rect({
+      left: x-10, top: y-18,
+      width: 20, height: 48,
+      rx: 8, ry: 8,
+      fill: '#e6e6e6',
+      stroke: '#111',
+      strokeWidth: 2
+    });
+    return new fabric.Group([body, head], { left:x, top:y, originX:'center', originY:'center' });
+  }
+
+  // Pole + Flag (kept as-is from current “perfect” version style)
+  function makePole(x,y){
+    const pole = new fabric.Rect({
+      left: x-3, top: y-28, width: 6, height: 56,
+      fill: '#d0d0d0',
+      stroke:'#111',
+      strokeWidth: 2
+    });
+    return pole;
+  }
+
+  function makeFlag(x,y){
+    const pole = new fabric.Rect({
+      left: x-3, top: y-30, width: 6, height: 60,
+      fill: '#d0d0d0',
+      stroke:'#111',
+      strokeWidth: 2
+    });
+    const flag = new fabric.Path(`M ${x+3} ${y-26} L ${x+30} ${y-18} L ${x+3} ${y-8} Z`, {
+      fill: '#ff3b30',
+      stroke:'#111',
+      strokeWidth: 2
+    });
+    return new fabric.Group([pole, flag], { left:x, top:y, originX:'center', originY:'center' });
+  }
+
+  // ✅ Goal: revert to simple v1-style (clean goal frame)
+  function makeGoal(x,y){
+    const w = 46, h = 26;
+    const frame = new fabric.Rect({
+      left: x - w/2, top: y - h/2,
+      width: w, height: h,
+      fill: 'transparent',
+      stroke: '#f6f6f6',
+      strokeWidth: 3
+    });
+    const net = new fabric.Line([x - w/2, y, x + w/2, y], {
+      stroke: '#f6f6f6',
+      strokeWidth: 2,
+      strokeDashArray: [4,4]
+    });
+    return new fabric.Group([frame, net], { left:x, top:y, originX:'center', originY:'center' });
+  }
+
+  function makeText(x,y){
+    const t = new fabric.IText('Text', {
+      left: x, top: y,
+      fill: '#ffffff',
+      fontSize: 20,
+      fontWeight: '700',
+      stroke: '#111',
+      strokeWidth: 0,
+      editable: true
+    });
+    // Make editing easy: single tap to enter editing in edit mode
+    return t;
+  }
+
+  // Ensure new objects are editable
+  function normalizeNewObject(o){
+    o.set({
+      cornerColor: '#ffd400',
+      cornerStrokeColor: '#111',
+      borderColor: 'rgba(255,212,0,0.8)',
+      cornerSize: 10,
+      transparentCorners: false,
+      padding: 2
+    });
+    return o;
+  }
+
+  // ----------------------------
+  // Add / edit modes
+  // ----------------------------
+  const addModeBtn  = document.getElementById('addModeBtn');
+  const editModeBtn = document.getElementById('editModeBtn');
+  const addControls = document.getElementById('addControls');
+
+  function setMode(newMode){
+    mode = newMode;
+    if (mode === 'edit'){
+      canvas.selection = true;
+      canvas.skipTargetFind = false;
+      addModeBtn.classList.remove('active');
+      editModeBtn.classList.add('active');
+      addControls.style.opacity = '0.55';
+    } else {
+      canvas.discardActiveObject();
+      canvas.selection = false;
+      canvas.skipTargetFind = true;
+      addModeBtn.classList.add('active');
+      editModeBtn.classList.remove('active');
+      addControls.style.opacity = '1';
     }
-  }, { passive:false });
+    canvas.requestRenderAll();
+  }
 
-  canvas.addEventListener('touchmove', (e) => {
-    const pts = getPointer(e);
-    if (pts.length === 2 && touchState){
-      e.preventDefault();
-      const p1 = pts[0], p2 = pts[1];
-      const d1 = dist(p1, p2);
-      const mid1 = { x:(p1.sx+p2.sx)/2, y:(p1.sy+p2.sy)/2 };
-
-      // zoom
-      const factor = d1 / Math.max(10, touchState.d0);
-      const targetS = clamp(touchState.s0 * factor, 0.25, 4.5);
-
-      // anchor at initial mid
-      const before = {
-        x: (touchState.mid0.x - touchState.view0.x) / touchState.view0.s,
-        y: (touchState.mid0.y - touchState.view0.y) / touchState.view0.s
-      };
-
-      view.s = targetS;
-      view.x = mid1.x - before.x * view.s;
-      view.y = mid1.y - before.y * view.s;
-
-      draw();
-      return;
-    }
-  }, { passive:false });
-
-  canvas.addEventListener('touchend', () => { touchState = null; });
-
-  // Main pointer handling (mouse + single touch)
-  canvas.addEventListener('mousedown', onDown);
-  canvas.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', onUp);
-
-  canvas.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1) return; // pinch handled elsewhere
-    onDown(e);
-  }, { passive:false });
-
-  canvas.addEventListener('touchmove', (e) => {
-    if (e.touches.length !== 1) return;
-    onMove(e);
-  }, { passive:false });
-
-  canvas.addEventListener('touchend', (e) => {
-    if (e.touches && e.touches.length) return;
-    onUp(e);
+  addModeBtn.addEventListener('click', () => {
+    setMode('add');
+    setLineDrawing(false);
   });
 
-  function onDown(e){
-    if (touchState) return; // pinch mode
-    const p = getPointer(e)[0];
-    const w = screenToWorld(p.sx, p.sy);
-    pointerDown = true;
-    dragStart = { sx:p.sx, sy:p.sy, wx:w.x, wy:w.y };
-    startObj = null;
-    dragMode = null;
+  editModeBtn.addEventListener('click', () => {
+    setMode('edit');
+    setLineDrawing(false);
+  });
 
-    if (mode === 'add') {
-      // add object on down
-      saveState();
-      const type = addObjectEl.value;
-      const col = objColorEl.value || '#ffd400';
-      const o = makeObject(type, w.x, w.y, col);
-      objects.push(o);
-      activeId = o.id;
-      draw();
-      return;
+  // ----------------------------
+  // Dropdowns / color
+  // ----------------------------
+  document.getElementById('addType').addEventListener('change', (e) => addType = e.target.value);
+  document.getElementById('lineType').addEventListener('change', (e) => {
+    lineType = e.target.value;
+    if (mode === 'add' && lineType === 'free') setLineDrawing(true);
+    else setLineDrawing(false);
+  });
+  document.getElementById('strokeColor').addEventListener('input', (e) => {
+    strokeColor = e.target.value;
+    if (canvas.freeDrawingBrush) canvas.freeDrawingBrush.color = strokeColor;
+  });
+
+  // ----------------------------
+  // Line drawing tools (straight/arrow/dashed/curved/free)
+  // ----------------------------
+  let isDrawingLine = false;
+  let lineStart = null;
+  let tempObj = null;
+
+  function setLineDrawing(on){
+    canvas.isDrawingMode = !!on;
+    if (on){
+      canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+      canvas.freeDrawingBrush.width = 3;
+      canvas.freeDrawingBrush.color = strokeColor;
     }
-
-    if (mode === 'line') {
-      const type = lineTypeEl.value;
-      const wth = parseFloat(lineWidthEl.value) || 4;
-      const col = objColorEl.value || '#ffd400';
-
-      saveState();
-      const L = { id: uid(), type, color: col, w: wth, pts: [{x:w.x,y:w.y}] };
-      lines.push(L);
-      activeLineId = L.id;
-      draw();
-      return;
-    }
-
-    // edit mode
-    const hitId = hitTestObject(w.x, w.y);
-    if (hitId) {
-      activeId = hitId;
-      const o = objects.find(x => x.id === activeId);
-      const hnd = hitTestHandle(o, w.x, w.y);
-      dragMode = hnd || 'move';
-      startObj = JSON.parse(JSON.stringify(o));
-      // bring to front
-      const idx = objects.findIndex(x => x.id === activeId);
-      if (idx >= 0) objects.push(objects.splice(idx, 1)[0]);
-      draw();
-      return;
-    }
-
-    // empty space -> pan (one-finger / mouse drag)
-    activeId = null;
-    dragMode = 'pan';
-    draw();
   }
 
-  function onMove(e){
-    if (!pointerDown || touchState) return;
-    const p = getPointer(e)[0];
-    const w = screenToWorld(p.sx, p.sy);
+  function makeArrowHead(x1,y1,x2,y2, color){
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const size = 10;
+    return new fabric.Triangle({
+      left: x2,
+      top: y2,
+      originX: 'center',
+      originY: 'center',
+      angle: angle * 180/Math.PI + 90,
+      width: size*1.2,
+      height: size*1.6,
+      fill: color,
+      stroke: '#111',
+      strokeWidth: 1
+    });
+  }
 
-    if (mode === 'line' && activeLineId) {
-      const L = lines.find(x => x.id === activeLineId);
-      if (!L) return;
+  function beginLine(p){
+    isDrawingLine = true;
+    lineStart = p;
+    if (lineType === 'curved'){
+      tempObj = new fabric.Path(`M ${p.x} ${p.y} Q ${p.x} ${p.y} ${p.x} ${p.y}`, {
+        fill: '',
+        stroke: strokeColor,
+        strokeWidth: 3,
+        selectable:false,
+        evented:false
+      });
+      canvas.add(tempObj);
+    } else {
+      tempObj = new fabric.Line([p.x, p.y, p.x, p.y], {
+        stroke: strokeColor,
+        strokeWidth: 3,
+        selectable:false,
+        evented:false,
+        strokeDashArray: (lineType === 'dashed') ? [10,7] : null
+      });
+      canvas.add(tempObj);
+    }
+  }
 
-      if (L.type === 'free') {
-        L.pts.push({x:w.x,y:w.y});
-      } else {
-        if (L.pts.length === 1) L.pts.push({x:w.x,y:w.y});
-        else L.pts[L.pts.length-1] = {x:w.x,y:w.y};
-      }
-      draw();
+  function updateLine(p){
+    if (!tempObj) return;
+    if (lineType === 'curved'){
+      // Control point in the middle, lifted a bit for a gentle curve
+      const cx = (lineStart.x + p.x)/2;
+      const cy = (lineStart.y + p.y)/2 - 50;
+      tempObj.set({ path: [['M', lineStart.x, lineStart.y], ['Q', cx, cy, p.x, p.y]] });
+    } else {
+      tempObj.set({ x2: p.x, y2: p.y });
+    }
+    canvas.requestRenderAll();
+  }
+
+  function finishLine(p){
+    isDrawingLine = false;
+
+    // Remove temp and replace with final (selectable = true in edit mode only)
+    canvas.remove(tempObj);
+
+    let finalObj = null;
+
+    if (lineType === 'curved'){
+      const cx = (lineStart.x + p.x)/2;
+      const cy = (lineStart.y + p.y)/2 - 50;
+      finalObj = new fabric.Path(`M ${lineStart.x} ${lineStart.y} Q ${cx} ${cy} ${p.x} ${p.y}`, {
+        fill: '',
+        stroke: strokeColor,
+        strokeWidth: 3
+      });
+    } else {
+      finalObj = new fabric.Line([lineStart.x, lineStart.y, p.x, p.y], {
+        stroke: strokeColor,
+        strokeWidth: 3,
+        strokeDashArray: (lineType === 'dashed') ? [10,7] : null
+      });
+    }
+
+    if (lineType === 'arrow'){
+      const head = makeArrowHead(lineStart.x, lineStart.y, p.x, p.y, strokeColor);
+      finalObj = new fabric.Group([finalObj, head], {});
+    }
+
+    normalizeNewObject(finalObj);
+    canvas.add(finalObj);
+
+    // Respect mode: selectable only in edit
+    finalObj.selectable = (mode === 'edit');
+    finalObj.evented    = (mode === 'edit');
+
+    tempObj = null;
+    lineStart = null;
+    canvas.requestRenderAll();
+  }
+
+  // Fabric events
+  canvas.on('mouse:down', (opt) => {
+    if (mode !== 'add') return;
+
+    const p = canvas.getPointer(opt.e);
+
+    // If free draw, Fabric handles it
+    if (lineType === 'free') return;
+
+    // If a line type selected (not none), draw line
+    if (lineType !== 'none'){
+      pushHistory();
+      beginLine(p);
       return;
     }
 
+    // Otherwise add an object
+    pushHistory();
+    const obj = (() => {
+      switch(addType){
+        case 'player': return makePlayer(p.x, p.y);
+        case 'ball': return makeFootball(p.x, p.y);
+        case 'cone': return makeCone(p.x, p.y);
+        case 'goal': return makeGoal(p.x, p.y);
+        case 'mannequin': return makeMannequin(p.x, p.y);
+        case 'pole': return makePole(p.x, p.y);
+        case 'flag': return makeFlag(p.x, p.y);
+        case 'text': return makeText(p.x, p.y);
+        default: return makePlayer(p.x, p.y);
+      }
+    })();
+
+    normalizeNewObject(obj);
+    obj.selectable = false;
+    obj.evented = false;
+    canvas.add(obj);
+    canvas.requestRenderAll();
+  });
+
+  canvas.on('mouse:move', (opt) => {
+    if (!isDrawingLine) return;
+    const p = canvas.getPointer(opt.e);
+    updateLine(p);
+  });
+
+  canvas.on('mouse:up', (opt) => {
+    if (!isDrawingLine) return;
+    const p = canvas.getPointer(opt.e);
+    finishLine(p);
+  });
+
+  // After free draw path created, make it exportable & editable in edit mode
+  canvas.on('path:created', (opt) => {
+    if (lineType !== 'free') return;
+    pushHistory();
+    const path = opt.path;
+    normalizeNewObject(path);
+    path.stroke = strokeColor;
+    path.selectable = (mode === 'edit');
+    path.evented = (mode === 'edit');
+    canvas.requestRenderAll();
+  });
+
+  // Make selectability follow mode (so you can always go back to adding)
+  function refreshSelectability(){
+    canvas.getObjects().forEach(o => {
+      if (o.isPitch) return;
+      o.selectable = (mode === 'edit');
+      o.evented = (mode === 'edit');
+    });
+    canvas.requestRenderAll();
+  }
+
+  // Easy text editing: in edit mode, double click/tap text to edit
+  canvas.on('mouse:dblclick', (opt) => {
+    const t = opt.target;
+    if (!t) return;
     if (mode !== 'edit') return;
 
-    if (dragMode === 'pan') {
-      // pan in screen coords
-      const dx = p.sx - dragStart.sx;
-      const dy = p.sy - dragStart.sy;
-      view.x += dx;
-      view.y += dy;
-      dragStart.sx = p.sx;
-      dragStart.sy = p.sy;
-      draw();
-      return;
+    // If group contains text, ignore; only IText
+    if (t.type === 'i-text'){
+      t.enterEditing();
+      t.hiddenTextarea && t.hiddenTextarea.focus();
     }
-
-    if (!activeId) return;
-    const o = objects.find(x => x.id === activeId);
-    if (!o || !startObj) return;
-
-    if (dragMode === 'move') {
-      o.x = startObj.x + (w.x - dragStart.wx);
-      o.y = startObj.y + (w.y - dragStart.wy);
-      draw();
-      return;
-    }
-
-    if (dragMode === 'resize') {
-      // scale based on distance from center
-      const d0 = Math.hypot(dragStart.wx - startObj.x, dragStart.wy - startObj.y);
-      const d1 = Math.hypot(w.x - startObj.x, w.y - startObj.y);
-      const next = clamp((startObj.scale ?? 1) * (d1 / Math.max(0.001, d0)), 0.35, 5);
-      o.scale = next;
-      draw();
-      return;
-    }
-
-    if (dragMode === 'rotate') {
-      const a0 = Math.atan2(dragStart.wy - startObj.y, dragStart.wx - startObj.x);
-      const a1 = Math.atan2(w.y - startObj.y, w.x - startObj.x);
-      o.rot = (startObj.rot || 0) + (a1 - a0);
-      draw();
-      return;
-    }
-  }
-
-  function onUp(){
-    if (!pointerDown) return;
-    pointerDown = false;
-
-    // finalize line
-    if (mode === 'line' && activeLineId) {
-      const L = lines.find(x => x.id === activeLineId);
-      if (L && L.pts.length < 2) {
-        // remove tiny line
-        const idx = lines.findIndex(x => x.id === activeLineId);
-        if (idx >= 0) lines.splice(idx, 1);
-      }
-      activeLineId = null;
-      draw();
-      return;
-    }
-    draw();
-  }
-
-  function makeObject(type, x, y, color){
-    const base = { id: uid(), type, x, y, color, rot:0, scale:1 };
-    if (type === 'text'){
-      base.text = 'Text';
-      base.r = 18;
-    } else if (type === 'goal') base.r = 22;
-    else if (type === 'mannequin') base.r = 18;
-    else if (type === 'pole') base.r = 14;
-    else if (type === 'flag') base.r = 15;
-    else if (type === 'ball') base.r = 16;
-    else base.r = 18;
-    return base;
-  }
-
-  // Export helpers
-  function renderToOffscreen(scaleFactor=2){
-    const rect = canvas.getBoundingClientRect();
-    const w = Math.round(rect.width * scaleFactor);
-    const h = Math.round(rect.height * scaleFactor);
-    const off = document.createElement('canvas');
-    off.width = w;
-    off.height = h;
-    const octx = off.getContext('2d');
-
-    // draw in CSS px coordinates scaled
-    octx.setTransform(scaleFactor,0,0,scaleFactor,0,0);
-
-    // same draw pipeline but using current view + world content
-    octx.save();
-    octx.translate(view.x, view.y);
-    octx.scale(view.s, view.s);
-
-    // pitch
-    // Re-implement minimal pitch draw on offscreen context by temporarily swapping ctx
-    const saved = ctx;
-    // (we'll just duplicate logic by calling helpers that use global ctx)
-    // Quick hack: assign ctx variable? Not possible (const).
-    // So we'll inline pitch/object/line drawing for export using octx:
-
-    // --- Pitch ---
-    if (pitchType !== 'blank') {
-      const pb = getPitchBox();
-      const stripeCount = 14;
-      const stripeW = pb.w / stripeCount;
-
-      const g = octx.createLinearGradient(pb.x, pb.y, pb.x, pb.y + pb.h);
-      g.addColorStop(0, '#2e6b43');
-      g.addColorStop(1, '#245237');
-      octx.fillStyle = g;
-      octx.fillRect(pb.x, pb.y, pb.w, pb.h);
-
-      for (let i=0;i<stripeCount;i++){
-        octx.fillStyle = (i%2===0) ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
-        octx.fillRect(pb.x + i*stripeW, pb.y, stripeW, pb.h);
-      }
-
-      const lineCol = 'rgba(245,245,245,0.85)';
-      octx.strokeStyle = lineCol;
-      octx.lineWidth = 4;
-      octx.lineJoin = 'round';
-      octx.lineCap = 'round';
-      octx.strokeRect(pb.x + 12, pb.y + 12, pb.w - 24, pb.h - 24);
-
-      if (pitchType === 'full') {
-        const x0 = pb.x + 12, y0 = pb.y + 12, W = pb.w - 24, H = pb.h - 24;
-
-        octx.beginPath();
-        octx.moveTo(x0 + W/2, y0);
-        octx.lineTo(x0 + W/2, y0 + H);
-        octx.stroke();
-
-        octx.beginPath();
-        octx.arc(x0 + W/2, y0 + H/2, H*0.14, 0, Math.PI*2);
-        octx.stroke();
-        octx.fillStyle = lineCol;
-        octx.beginPath();
-        octx.arc(x0 + W/2, y0 + H/2, 4, 0, Math.PI*2);
-        octx.fill();
-
-        // both ends boxes/spots
-        exportDrawGoalEndFull(octx, x0,y0,W,H,'left');
-        exportDrawGoalEndFull(octx, x0,y0,W,H,'right');
-      }
-
-      if (pitchType === 'half') {
-        const x0 = pb.x + 12, y0 = pb.y + 12, W = pb.w - 24, H = pb.h - 24;
-
-        octx.beginPath();
-        octx.moveTo(x0, y0 + H);
-        octx.lineTo(x0 + W, y0 + H);
-        octx.stroke();
-
-        octx.beginPath();
-        octx.arc(x0 + W/2, y0 + H, W*0.18, Math.PI, Math.PI*2);
-        octx.stroke();
-
-        exportDrawGoalEndHalfVertical(octx, x0,y0,W,H);
-      }
-
-      function exportDrawGoalEndFull(c, x0,y0,W,H, side){
-        const paW = W*0.16;
-        const paH = H*0.56;
-        const gaW = W*0.07;
-        const gaH = H*0.28;
-        const spotD = W*0.11;
-
-        const cx = x0 + (side==='left' ? 0 : W);
-        const topPA = y0 + (H - paH)/2;
-        const topGA = y0 + (H - gaH)/2;
-
-        c.strokeStyle = 'rgba(245,245,245,0.85)';
-        c.lineWidth = 4;
-        c.strokeRect(side==='left' ? cx : cx - paW, topPA, paW, paH);
-        c.strokeRect(side==='left' ? cx : cx - gaW, topGA, gaW, gaH);
-
-        c.fillStyle = 'rgba(245,245,245,0.85)';
-        c.beginPath();
-        c.arc(side==='left' ? (x0 + spotD) : (x0 + W - spotD), y0 + H/2, 4, 0, Math.PI*2);
-        c.fill();
-
-        c.strokeStyle = 'rgba(245,245,245,0.55)';
-        c.lineWidth = 3;
-        const arcR = H*0.14;
-        const arcX = side==='left' ? (x0 + spotD) : (x0 + W - spotD);
-        c.beginPath();
-        if (side==='left'){
-          c.arc(arcX, y0 + H/2, arcR, -Math.PI/3, Math.PI/3);
-        } else {
-          c.arc(arcX, y0 + H/2, arcR, Math.PI - Math.PI/3, Math.PI + Math.PI/3);
-        }
-        c.stroke();
-      }
-
-      function exportDrawGoalEndHalfVertical(c, x0,y0,W,H){
-        const paD = H*0.22;
-        const paW = W*0.62;
-        const gaD = H*0.10;
-        const gaW = W*0.34;
-        const spotD = H*0.16;
-
-        c.strokeStyle = 'rgba(245,245,245,0.85)';
-        c.lineWidth = 4;
-        c.strokeRect(x0 + (W - paW)/2, y0, paW, paD);
-        c.strokeRect(x0 + (W - gaW)/2, y0, gaW, gaD);
-
-        c.fillStyle = 'rgba(245,245,245,0.85)';
-        c.beginPath();
-        c.arc(x0 + W/2, y0 + spotD, 4, 0, Math.PI*2);
-        c.fill();
-
-        c.strokeStyle = 'rgba(245,245,245,0.55)';
-        c.lineWidth = 3;
-        c.beginPath();
-        c.arc(x0 + W/2, y0 + spotD, W*0.20, Math.PI + Math.PI/6, Math.PI*2 - Math.PI/6);
-        c.stroke();
-      }
-    }
-
-    // --- Lines ---
-    for (const L of lines) {
-      // draw using same logic but on octx
-      const col = L.color || '#ffd400';
-      octx.strokeStyle = col;
-      octx.lineWidth = L.w || 4;
-      octx.lineJoin = 'round';
-      octx.lineCap = 'round';
-      const pts = L.pts || [];
-      if (pts.length < 2) continue;
-
-      if (L.type === 'dashed') octx.setLineDash([10, 10]);
-      else octx.setLineDash([]);
-
-      if (L.type === 'free') {
-        octx.beginPath();
-        octx.moveTo(pts[0].x, pts[0].y);
-        for (let i=1;i<pts.length;i++) octx.lineTo(pts[i].x, pts[i].y);
-        octx.stroke();
-        octx.setLineDash([]);
-        continue;
-      }
-
-      const a = pts[0], b = pts[pts.length-1];
-
-      if (L.type === 'curved') {
-        const mid = { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
-        const dx = b.x - a.x, dy = b.y - a.y;
-        const len = Math.max(1, Math.hypot(dx,dy));
-        const nx = -dy/len, ny = dx/len;
-        const bulge = Math.min(120, len*0.22);
-        const c = { x: mid.x + nx*bulge, y: mid.y + ny*bulge };
-
-        octx.beginPath();
-        octx.moveTo(a.x,a.y);
-        octx.quadraticCurveTo(c.x,c.y,b.x,b.y);
-        octx.stroke();
-      } else {
-        octx.beginPath();
-        octx.moveTo(a.x,a.y);
-        octx.lineTo(b.x,b.y);
-        octx.stroke();
-      }
-      octx.setLineDash([]);
-
-      if (L.type === 'arrow') {
-        // arrow head
-        const ang = Math.atan2(b.y-a.y, b.x-a.x);
-        const size = 14 + (L.w||4)*1.2;
-        octx.fillStyle = col;
-        octx.beginPath();
-        octx.moveTo(b.x, b.y);
-        octx.lineTo(b.x - Math.cos(ang - Math.PI/6)*size, b.y - Math.sin(ang - Math.PI/6)*size);
-        octx.lineTo(b.x - Math.cos(ang + Math.PI/6)*size, b.y - Math.sin(ang + Math.PI/6)*size);
-        octx.closePath();
-        octx.fill();
-      }
-    }
-
-    // --- Objects ---
-    for (const o of objects) {
-      // reuse the main drawObject by temporarily drawing using global ctx is not possible,
-      // so we duplicate minimal by drawing into octx with same shapes:
-      exportDrawObject(octx, o);
-    }
-
-    octx.restore();
-    return off;
-
-    function exportDrawObject(c, o){
-      const col = o.color || '#ffd400';
-      const x = o.x, y = o.y;
-      const r = o.r || 18;
-      const s = o.scale ?? 1;
-      const rot = o.rot || 0;
-
-      c.save();
-      c.translate(x, y);
-      c.rotate(rot);
-      c.scale(s, s);
-
-      if (o.type === 'player') {
-        c.fillStyle = col;
-        c.beginPath();
-        c.arc(0,0,r,0,Math.PI*2);
-        c.fill();
-        c.strokeStyle = 'rgba(0,0,0,0.35)';
-        c.lineWidth = 2;
-        c.stroke();
-      }
-
-      if (o.type === 'ball') {
-        const R = r*0.95;
-        c.fillStyle = '#f7f7f7';
-        c.beginPath();
-        c.arc(0,0,R,0,Math.PI*2);
-        c.fill();
-        c.strokeStyle = 'rgba(0,0,0,0.55)';
-        c.lineWidth = 2;
-        c.stroke();
-
-        c.fillStyle = '#1b1b1b';
-        c.beginPath();
-        for (let i=0;i<5;i++){
-          const a = -Math.PI/2 + i*(Math.PI*2/5);
-          const px = Math.cos(a) * (R*0.38);
-          const py = Math.sin(a) * (R*0.38);
-          if (i===0) c.moveTo(px,py); else c.lineTo(px,py);
-        }
-        c.closePath();
-        c.fill();
-
-        c.strokeStyle = 'rgba(0,0,0,0.35)';
-        c.lineWidth = 1.5;
-        for (let i=0;i<5;i++){
-          const a = -Math.PI/2 + i*(Math.PI*2/5);
-          c.beginPath();
-          c.moveTo(Math.cos(a)*(R*0.38), Math.sin(a)*(R*0.38));
-          c.lineTo(Math.cos(a)*(R*0.82), Math.sin(a)*(R*0.82));
-          c.stroke();
-        }
-      }
-
-      if (o.type === 'cone') {
-        c.fillStyle = col;
-        c.beginPath();
-        c.moveTo(0,-r);
-        c.lineTo(r,r);
-        c.lineTo(-r,r);
-        c.closePath();
-        c.fill();
-        c.strokeStyle = 'rgba(0,0,0,0.35)';
-        c.lineWidth = 2;
-        c.stroke();
-      }
-
-      if (o.type === 'goal') {
-        const W = r*2.6, H = r*1.7;
-        c.strokeStyle = col;
-        c.lineWidth = 3;
-        c.strokeRect(-W/2, -H/2, W, H);
-
-        c.beginPath();
-        c.moveTo(W/2, -H/2);
-        c.lineTo(W/2 + r*0.55, -H/2 - r*0.35);
-        c.lineTo(W/2 + r*0.55, H/2 - r*0.35);
-        c.lineTo(W/2, H/2);
-        c.stroke();
-
-        c.strokeStyle = 'rgba(255,255,255,0.35)';
-        c.lineWidth = 1;
-        for (let i=1;i<=5;i++){
-          const xx = -W/2 + (W*i/6);
-          c.beginPath();
-          c.moveTo(xx, -H/2);
-          c.lineTo(xx, H/2);
-          c.stroke();
-        }
-        for (let i=1;i<=4;i++){
-          const yy = -H/2 + (H*i/5);
-          c.beginPath();
-          c.moveTo(-W/2, yy);
-          c.lineTo(W/2, yy);
-          c.stroke();
-        }
-      }
-
-      if (o.type === 'mannequin') {
-        c.fillStyle = col;
-        const W = r*1.1, H = r*2.8;
-        roundRect(c, -W/2, -H/2, W, H, r*0.35, true, false);
-
-        c.beginPath();
-        c.moveTo(-W/2, -H/2 + r*0.35);
-        c.quadraticCurveTo(0, -H/2 - r*0.35, W/2, -H/2 + r*0.35);
-        c.lineTo(W/2, -H/2 + r*0.7);
-        c.quadraticCurveTo(0, -H/2, -W/2, -H/2 + r*0.7);
-        c.closePath();
-        c.fill();
-
-        c.globalCompositeOperation = 'destination-out';
-        c.beginPath(); c.arc(0, -H*0.12, r*0.32, 0, Math.PI*2); c.fill();
-        c.beginPath(); c.arc(0, H*0.08, r*0.28, 0, Math.PI*2); c.fill();
-        c.globalCompositeOperation = 'source-over';
-
-        c.strokeStyle = 'rgba(0,0,0,0.35)';
-        c.lineWidth = 2;
-        roundRect(c, -W/2, -H/2, W, H, r*0.35, false, true);
-      }
-
-      if (o.type === 'pole') {
-        c.strokeStyle = col;
-        c.lineWidth = 5;
-        c.lineCap = 'round';
-        c.beginPath();
-        c.moveTo(0, -r*2.2);
-        c.lineTo(0, r*2.2);
-        c.stroke();
-        c.fillStyle = 'rgba(0,0,0,0.35)';
-        c.beginPath();
-        c.ellipse(0, r*2.25, r*0.6, r*0.25, 0, 0, Math.PI*2);
-        c.fill();
-      }
-
-      if (o.type === 'flag') {
-        c.strokeStyle = col;
-        c.lineWidth = 4;
-        c.lineCap = 'round';
-        c.beginPath();
-        c.moveTo(-r*0.6, -r*2.2);
-        c.lineTo(-r*0.6, r*2.2);
-        c.stroke();
-
-        c.fillStyle = col;
-        c.beginPath();
-        c.moveTo(-r*0.55, -r*2.0);
-        c.lineTo(r*1.6, -r*1.45);
-        c.lineTo(-r*0.55, -r*0.95);
-        c.lineTo(r*0.5, -r*1.45);
-        c.closePath();
-        c.fill();
-
-        c.strokeStyle = 'rgba(0,0,0,0.35)';
-        c.lineWidth = 2;
-        c.stroke();
-      }
-
-      if (o.type === 'text') {
-        c.fillStyle = col;
-        c.font = `700 ${Math.max(14, r)}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
-        c.textAlign = 'center';
-        c.textBaseline = 'middle';
-        c.fillText(o.text || 'Text', 0, 0);
-      }
-
-      c.restore();
-
-      function roundRect(c, x, y, w, h, rr, fill, stroke){
-        const r2 = Math.min(rr, w/2, h/2);
-        c.beginPath();
-        c.moveTo(x+r2, y);
-        c.arcTo(x+w, y, x+w, y+h, r2);
-        c.arcTo(x+w, y+h, x, y+h, r2);
-        c.arcTo(x, y+h, x, y, r2);
-        c.arcTo(x, y, x+w, y, r2);
-        c.closePath();
-        if (fill) c.fill();
-        if (stroke) c.stroke();
-      }
-    }
-  }
-
-  // Export PNG
-  exportPNGBtn.addEventListener('click', () => {
-    const off = renderToOffscreen(2);
-    const a = document.createElement('a');
-    a.download = 'tactigrid_drill.png';
-    a.href = off.toDataURL('image/png');
-    a.click();
   });
 
-  // Export PDF (branding in BLACK + notes included)
-  exportPDFBtn.addEventListener('click', async () => {
-    const off = renderToOffscreen(2);
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
-
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-
-    // Header (branding in black)
-    pdf.setTextColor(0,0,0);
-    pdf.setFont('helvetica','bold');
-    pdf.setFontSize(18);
-    pdf.text('TactiGrid', 36, 36);
-
-    pdf.setFont('helvetica','normal');
-    pdf.setFontSize(12);
-    pdf.text('Drill Designer Export', 36, 56);
-
-    // Image placement
-    const imgData = off.toDataURL('image/png');
-    const imgMaxW = pageW - 72;
-    const imgMaxH = pageH * 0.62;
-    const imgRatio = off.width / off.height;
-
-    let imgW = imgMaxW;
-    let imgH = imgW / imgRatio;
-    if (imgH > imgMaxH){
-      imgH = imgMaxH;
-      imgW = imgH * imgRatio;
-    }
-
-    const imgX = (pageW - imgW)/2;
-    const imgY = 74;
-
-    pdf.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH);
-
-    // Notes
-    const notes = (notesEl.value || '').trim();
-    const notesY = imgY + imgH + 22;
-
-    pdf.setFont('helvetica','bold');
-    pdf.setFontSize(14);
-    pdf.setTextColor(0,0,0);
-    pdf.text('Notes', 36, notesY);
-
-    pdf.setFont('helvetica','normal');
-    pdf.setFontSize(11);
-    const wrapped = pdf.splitTextToSize(notes || '—', pageW - 72);
-    pdf.text(wrapped, 36, notesY + 16);
-
-    pdf.save('tactigrid_drill.pdf');
+  // ----------------------------
+  // Undo / Redo / Clear
+  // ----------------------------
+  document.getElementById('undoBtn').addEventListener('click', () => {
+    if (undoStack.length <= 1) return;
+    const current = undoStack.pop();
+    redoStack.push(current);
+    const prev = undoStack[undoStack.length - 1];
+    loadFrom(prev);
   });
 
-  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
-  function dist(p1,p2){ return Math.hypot(p2.sx-p1.sx, p2.sy-p1.sy); }
+  document.getElementById('redoBtn').addEventListener('click', () => {
+    if (!redoStack.length) return;
+    const next = redoStack.pop();
+    undoStack.push(next);
+    loadFrom(next);
+  });
 
-  // Initial setup
-  resizeCanvas();
-  pitchType = pitchTypeEl.value;
-  fitPitchToCanvas();
-  saveState();
-  setMode('edit');
-  draw();
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    pushHistory();
+    canvas.getObjects().slice().forEach(o => {
+      if (!o.isPitch) canvas.remove(o);
+    });
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+  });
+
+  // ----------------------------
+  // Pitch type changes
+  // ----------------------------
+  pitchTypeSel.addEventListener('change', () => {
+    // IMPORTANT: half pitch changes the canvas size too (as requested).
+    // Preserve objects and pitch rebuild.
+    rebuildPitchPreserveObjects();
+    // keep current mode behavior
+    refreshSelectability();
+    pushHistory();
+  });
+
+  // ----------------------------
+  // Zoom + Pan (mouse + touch)
+  // ----------------------------
+  const zoomInBtn = document.getElementById('zoomInBtn');
+  const zoomOutBtn = document.getElementById('zoomOutBtn');
+  const zoomResetBtn = document.getElementById('zoomResetBtn');
+
+  function clamp(v, min, max){ return Math.min(max, Math.max(min, v)); }
+
+  function setZoomAtCenter(targetZoom){
+    const z = clamp(targetZoom, 0.6, 3.2);
+    const center = canvas.getCenter();
+    canvas.zoomToPoint(new fabric.Point(center.left, center.top), z);
+    canvas.requestRenderAll();
+  }
+
+  zoomInBtn.addEventListener('click', () => setZoomAtCenter(canvas.getZoom() * 1.15));
+  zoomOutBtn.addEventListener('click', () => setZoomAtCenter(canvas.getZoom() / 1.15));
+  zoomResetBtn.addEventListener('click', () => {
+    canvas.setViewportTransform([1,0,0,1,0,0]);
+    canvas.requestRenderAll();
+  });
+
+  // Mouse wheel zoom
+  canvas.on('mouse:wheel', (opt) => {
+    const e = opt.e;
+    const delta = e.deltaY;
+    let zoom = canvas.getZoom();
+    zoom *= Math.pow(0.999, delta);
+    zoom = clamp(zoom, 0.6, 3.2);
+    const pt = new fabric.Point(e.offsetX, e.offsetY);
+    canvas.zoomToPoint(pt, zoom);
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // Touch pinch + two-finger pan
+  let lastTouch = null;
+  let lastDist = null;
+
+  frameEl.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2){
+      lastTouch = {
+        x: (e.touches[0].clientX + e.touches[1].clientX)/2,
+        y: (e.touches[0].clientY + e.touches[1].clientY)/2
+      };
+      lastDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }
+  }, { passive:false });
+
+  frameEl.addEventListener('touchmove', (e) => {
+    if (e.touches.length !== 2) return;
+
+    e.preventDefault();
+
+    const mid = {
+      x: (e.touches[0].clientX + e.touches[1].clientX)/2,
+      y: (e.touches[0].clientY + e.touches[1].clientY)/2
+    };
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+
+    // Zoom
+    if (lastDist){
+      let zoom = canvas.getZoom() * (dist / lastDist);
+      zoom = clamp(zoom, 0.6, 3.2);
+
+      const rect = frameEl.getBoundingClientRect();
+      const pt = new fabric.Point(mid.x - rect.left, mid.y - rect.top);
+      canvas.zoomToPoint(pt, zoom);
+    }
+
+    // Pan
+    if (lastTouch){
+      const dx = mid.x - lastTouch.x;
+      const dy = mid.y - lastTouch.y;
+      const vpt = canvas.viewportTransform;
+      vpt[4] += dx;
+      vpt[5] += dy;
+      canvas.requestRenderAll();
+    }
+
+    lastTouch = mid;
+    lastDist = dist;
+  }, { passive:false });
+
+  frameEl.addEventListener('touchend', () => {
+    lastTouch = null;
+    lastDist = null;
+  });
+
+  // ----------------------------
+  // Export PNG / PDF (branding in BLACK)
+  // ----------------------------
+  function withBrandingTemp(fn){
+    const W = canvas.getWidth();
+    const H = canvas.getHeight();
+
+    // Add black branding text temporarily (export only)
+    const brand = new fabric.Text('TactiGrid', {
+      left: W - 14,
+      top: H - 14,
+      originX: 'right',
+      originY: 'bottom',
+      fill: '#000000',
+      fontSize: 18,
+      fontWeight: '800',
+      selectable:false,
+      evented:false
+    });
+
+    canvas.add(brand);
+    canvas.bringToFront(brand);
+    canvas.requestRenderAll();
+
+    try { return fn(); }
+    finally {
+      canvas.remove(brand);
+      canvas.requestRenderAll();
+    }
+  }
+
+  document.getElementById('exportPngBtn').addEventListener('click', () => {
+    withBrandingTemp(() => {
+      // multiplier improves clarity and preserves colours
+      const dataUrl = canvas.toDataURL({ format:'png', multiplier: 2, enableRetinaScaling: true });
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'tactigrid-drill.png';
+      a.click();
+    });
+  });
+
+  document.getElementById('exportPdfBtn').addEventListener('click', async () => {
+    const notesText = document.getElementById('notes').value || '';
+
+    withBrandingTemp(() => {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation:'portrait', unit:'pt', format:'a4' });
+
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+
+      // Render canvas image
+      const img = canvas.toDataURL({ format:'png', multiplier: 2, enableRetinaScaling: true });
+
+      // Fit image to page with margins
+      const margin = 36;
+      const maxW = pageW - margin*2;
+      const maxH = pageH * 0.58; // leave room for notes below
+
+      // Image aspect ratio
+      const imgW = canvas.getWidth();
+      const imgH = canvas.getHeight();
+      const scale = Math.min(maxW / imgW, maxH / imgH);
+
+      const drawW = imgW * scale;
+      const drawH = imgH * scale;
+
+      const x = (pageW - drawW) / 2;
+      const y = margin;
+
+      pdf.addImage(img, 'PNG', x, y, drawW, drawH);
+
+      // Title / branding (BLACK)
+      pdf.setTextColor(0,0,0);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(14);
+      pdf.text('TactiGrid Drill Designer', margin, y + drawH + 28);
+
+      // Notes
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(11);
+      const wrapped = pdf.splitTextToSize(notesText, pageW - margin*2);
+      pdf.text(wrapped, margin, y + drawH + 52);
+
+      // Footer branding in BLACK
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.text('TactiGrid', pageW - margin, pageH - 18, { align:'right' });
+
+      pdf.save('tactigrid-drill.pdf');
+    });
+  });
+
+  // ----------------------------
+  // Keep everything consistent when switching modes
+  // ----------------------------
+  function applyModeToExistingObjects(){
+    canvas.getObjects().forEach(o => {
+      if (o.isPitch) return;
+      o.selectable = (mode === 'edit');
+      o.evented = (mode === 'edit');
+    });
+    canvas.requestRenderAll();
+  }
+
+  // When mode changes, update existing objects
+  addModeBtn.addEventListener('click', applyModeToExistingObjects);
+  editModeBtn.addEventListener('click', applyModeToExistingObjects);
+
+  // ----------------------------
+  // Init
+  // ----------------------------
+  function init(){
+    fitCanvasToFrame();
+    makePitch(pitchTypeSel.value);
+    resetHistory();
+    setMode('add');
+
+    // On window resize
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        rebuildPitchPreserveObjects();
+        refreshSelectability();
+      }, 120);
+    });
+  }
+
+  init();
 
 })();
 </script>
