@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TactiGrid Drill Designer</title>
 
-  <!-- Fabric.js for object editing (drag/resize/rotate) + touch support -->
+  <!-- Fabric.js -->
   <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
 
-  <!-- jsPDF for PDF export -->
+  <!-- jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
@@ -23,7 +23,6 @@
       --shadow: 0 10px 30px rgba(0,0,0,0.35);
       --radius: 14px;
     }
-
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
     body{
@@ -34,90 +33,38 @@
       color:var(--text);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
-
-    .wrap{
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 18px 14px 40px;
-    }
-
-    header{
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom: 14px;
-    }
-
-    .brand{
-      display:flex; align-items:center; gap:10px;
-      user-select:none;
-    }
+    .wrap{ max-width:1200px; margin:0 auto; padding:18px 14px 40px; }
+    header{ display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .brand{ display:flex; align-items:center; gap:10px; user-select:none; }
     .logoMark{
-      width:34px; height:34px; border-radius: 10px;
+      width:34px; height:34px; border-radius:10px;
       background: linear-gradient(135deg, rgba(255,212,0,0.95), rgba(255,212,0,0.65));
       box-shadow: 0 10px 25px rgba(255,212,0,0.18);
       position:relative;
     }
     .logoMark:after{
-      content:"";
-      position:absolute; inset:8px;
-      border-radius: 8px;
+      content:""; position:absolute; inset:8px; border-radius:8px;
       border:2px solid rgba(0,0,0,0.55);
     }
-    .brand h1{
-      font-size: 18px;
-      margin:0;
-      letter-spacing: 0.2px;
-      font-weight: 800;
-    }
-    .brand .sub{
-      margin:0;
-      font-size: 12px;
-      color: var(--muted);
-      margin-top:2px;
-    }
-
-    .topControls{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
+    .brand h1{ font-size:18px; margin:0; letter-spacing:0.2px; font-weight:800; }
+    .brand .sub{ margin:0; font-size:12px; color:var(--muted); margin-top:2px; }
+    .topControls{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
 
     .panel{
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 70%),
-                  var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 70%), var(--panel);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
     }
-
-    .toolbar{
-      display:flex;
-      gap:10px;
-      padding: 12px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-
+    .toolbar{ display:flex; gap:10px; padding:12px; align-items:center; flex-wrap:wrap; }
     .group{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-      padding: 6px 8px;
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      padding:6px 8px;
       background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 12px;
+      border:1px solid rgba(255,255,255,0.07);
+      border-radius:12px;
     }
-
-    label{
-      font-size: 12px;
-      color: var(--muted);
-      margin-right: 4px;
-      white-space:nowrap;
-    }
+    label{ font-size:12px; color:var(--muted); margin-right:4px; white-space:nowrap; }
 
     select, input[type="color"], textarea{
       background: var(--panel2);
@@ -128,119 +75,53 @@
       outline:none;
       font-size: 14px;
     }
-
-    input[type="color"]{
-      padding: 0;
-      width: 44px;
-      height: 38px;
-      border-radius: 10px;
-    }
+    input[type="color"]{ padding:0; width:44px; height:38px; border-radius:10px; }
 
     .btn{
       appearance:none;
-      border: 1px solid rgba(255,255,255,0.12);
+      border:1px solid rgba(255,255,255,0.12);
       background: rgba(255,255,255,0.04);
       color: var(--text);
-      padding: 10px 12px;
-      border-radius: 12px;
+      padding:10px 12px;
+      border-radius:12px;
       cursor:pointer;
-      font-weight: 700;
+      font-weight:700;
       display:inline-flex;
       gap:10px;
       align-items:center;
       transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease;
       user-select:none;
     }
-    .btn:hover{
-      background: rgba(255,255,255,0.07);
-      border-color: rgba(255,255,255,0.18);
-    }
+    .btn:hover{ background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); }
     .btn:active{ transform: translateY(1px); }
+    .btn.primary{ background: rgba(255,212,0,0.14); border-color: rgba(255,212,0,0.35); }
+    .btn.primary:hover{ background: rgba(255,212,0,0.18); border-color: rgba(255,212,0,0.55); }
+    .btn.icon{ padding:10px 12px; min-width:44px; justify-content:center; }
+    .btn.active{ outline:2px solid rgba(255,212,0,0.55); outline-offset:1px; }
 
-    .btn.primary{
-      background: rgba(255,212,0,0.14);
-      border-color: rgba(255,212,0,0.35);
-    }
-    .btn.primary:hover{
-      background: rgba(255,212,0,0.18);
-      border-color: rgba(255,212,0,0.55);
-    }
+    .ico{ width:18px; height:18px; display:inline-block; }
 
-    .btn.icon{
-      padding: 10px 12px;
-      min-width: 44px;
-      justify-content:center;
-    }
-
-    .btn.active{
-      outline: 2px solid rgba(255,212,0,0.55);
-      outline-offset: 1px;
-    }
-
-    .ico{
-      width: 18px; height: 18px; display:inline-block;
-    }
-
-    .layout{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-      margin-top: 14px;
-    }
-
-    .canvasPanel{
-      padding: 12px;
-    }
-
+    .layout{ display:grid; grid-template-columns:1fr; gap:14px; margin-top:14px; }
+    .canvasPanel{ padding:12px; }
     .canvasFrame{
       width:100%;
-      border-radius: 14px;
+      border-radius:14px;
       overflow:hidden;
       border: 1px solid rgba(255,255,255,0.12);
-      background: #0a0a0d;
-      touch-action: none;
+      background:#0a0a0d;
+      touch-action:none;
     }
-
     canvas{ display:block; }
 
-    .notesPanel{
-      padding: 12px;
-    }
-    .notesPanel h2{
-      margin: 0 0 8px 0;
-      font-size: 14px;
-      letter-spacing:0.2px;
-    }
-    textarea{
-      width:100%;
-      min-height: 120px;
-      resize: vertical;
-      line-height: 1.35;
-    }
-
-    .exportRow{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top: 10px;
-    }
-
-    .hint{
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 10px;
-      line-height: 1.35;
-    }
+    .notesPanel{ padding:12px; }
+    .notesPanel h2{ margin:0 0 8px 0; font-size:14px; letter-spacing:0.2px; }
+    textarea{ width:100%; min-height:120px; resize:vertical; line-height:1.35; }
+    .exportRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .hint{ color:var(--muted); font-size:12px; margin-top:10px; line-height:1.35; }
 
     @media (min-width: 860px){
-      .layout{
-        grid-template-columns: 1fr 380px;
-        align-items:start;
-      }
-      .notesPanel{
-        position: sticky;
-        top: 14px;
-      }
+      .layout{ grid-template-columns: 1fr 380px; align-items:start; }
+      .notesPanel{ position: sticky; top: 14px; }
     }
   </style>
 </head>
@@ -264,8 +145,6 @@
     </header>
 
     <div class="panel toolbar" role="region" aria-label="Toolbar">
-      <!-- ✅ Removed “Pitch / Full Pitch (landscape)” completely -->
-
       <div class="group">
         <button class="btn primary active" id="addModeBtn" title="Add objects/lines">
           <span class="ico" aria-hidden="true">➕</span>
@@ -395,7 +274,7 @@
   function fitCanvasToFrame() {
     const r = frameEl.getBoundingClientRect();
     const w = Math.max(320, Math.floor(r.width));
-    const h = Math.floor(w * 0.58); // landscape
+    const h = Math.floor(w * 0.58);
     canvas.setWidth(w);
     canvas.setHeight(h);
     canvas.calcOffset();
@@ -408,7 +287,7 @@
     pitchGroup = null;
   }
 
-  // ✅ Pitch matches your reference: goals LEFT/RIGHT, halfway line VERTICAL
+  // ✅ FIXED PITCH: standard (goals top/bottom, halfway line horizontal)
   function makeFullPitch() {
     clearPitchOnly();
 
@@ -431,7 +310,6 @@
       evented: false
     });
 
-    // Vertical stripes (like your image)
     const stripes = [];
     const stripeCount = 14;
     const stripeW = field.width / stripeCount;
@@ -471,11 +349,11 @@
 
     const objs = [...stripes, field];
 
-    // Outer boundary
+    // Boundary
     objs.push(R({ left: field.left, top: field.top, width: field.width, height: field.height }));
 
-    // Halfway line VERTICAL
-    objs.push(L(field.left + field.width/2, field.top, field.left + field.width/2, field.top + field.height));
+    // Halfway line
+    objs.push(L(field.left, field.top + field.height/2, field.left + field.width, field.top + field.height/2));
 
     // Centre circle + spot
     const ccR = Math.min(field.width, field.height) * 0.12;
@@ -489,66 +367,39 @@
       selectable:false, evented:false
     }));
 
-    // Penalty areas LEFT + RIGHT (like your reference)
-    const boxH = field.height * 0.55; // tall box
-    const boxW = field.width * 0.18;  // depth
-    const sixH = field.height * 0.30;
-    const sixW = field.width * 0.07;
-    const goalH = field.height * 0.18;
-    const goalW = field.width * 0.02;
+    // Boxes + goals top/bottom
+    const boxW = field.width * 0.55;
+    const boxH = field.height * 0.18;
+    const sixW = field.width * 0.30;
+    const sixH = field.height * 0.07;
+    const goalW = field.width * 0.18;
+    const goalH = field.height * 0.02;
 
-    const midY = field.top + field.height/2;
-
-    // LEFT end
-    objs.push(R({ left: field.left, top: midY - boxH/2, width: boxW, height: boxH }));
-    objs.push(R({ left: field.left, top: midY - sixH/2, width: sixW, height: sixH }));
-    // goal outline outside
-    objs.push(R({ left: field.left - goalW, top: midY - goalH/2, width: goalW, height: goalH }));
-    // penalty spot
+    // Top end
+    objs.push(R({ left: field.left + (field.width - boxW)/2, top: field.top, width: boxW, height: boxH }));
+    objs.push(R({ left: field.left + (field.width - sixW)/2, top: field.top, width: sixW, height: sixH }));
+    objs.push(R({ left: field.left + (field.width - goalW)/2, top: field.top - goalH, width: goalW, height: goalH }));
     objs.push(new fabric.Circle({
-      left: field.left + boxW*0.62 - 2,
-      top: midY - 2,
+      left: field.left + field.width/2 - 2,
+      top: field.top + boxH*0.62 - 2,
       radius: 2,
       fill: lineColor,
       stroke: lineColor,
       selectable:false, evented:false
     }));
-    // D arc
-    const arcR = Math.min(field.width, field.height) * 0.10;
-    objs.push(new fabric.Path(describeArc(field.left + boxW, midY, arcR, 300, 60), {
-      fill:'',
-      stroke: lineColor,
-      strokeWidth: 2,
-      selectable:false,
-      evented:false
-    }));
 
-    // RIGHT end
-    objs.push(R({ left: field.left + field.width - boxW, top: midY - boxH/2, width: boxW, height: boxH }));
-    objs.push(R({ left: field.left + field.width - sixW, top: midY - sixH/2, width: sixW, height: sixH }));
-    objs.push(R({ left: field.left + field.width, top: midY - goalH/2, width: goalW, height: goalH }));
+    // Bottom end
+    objs.push(R({ left: field.left + (field.width - boxW)/2, top: field.top + field.height - boxH, width: boxW, height: boxH }));
+    objs.push(R({ left: field.left + (field.width - sixW)/2, top: field.top + field.height - sixH, width: sixW, height: sixH }));
+    objs.push(R({ left: field.left + (field.width - goalW)/2, top: field.top + field.height, width: goalW, height: goalH }));
     objs.push(new fabric.Circle({
-      left: field.left + field.width - boxW*0.62 - 2,
-      top: midY - 2,
+      left: field.left + field.width/2 - 2,
+      top: field.top + field.height - boxH*0.62 - 2,
       radius: 2,
       fill: lineColor,
       stroke: lineColor,
       selectable:false, evented:false
     }));
-    objs.push(new fabric.Path(describeArc(field.left + field.width - boxW, midY, arcR, 120, 240), {
-      fill:'',
-      stroke: lineColor,
-      strokeWidth: 2,
-      selectable:false,
-      evented:false
-    }));
-
-    // Corner arcs (small, like your reference)
-    const cornerR = Math.min(field.width, field.height) * 0.03;
-    objs.push(new fabric.Path(describeArc(field.left, field.top, cornerR, 0, 90), { fill:'', stroke: lineColor, strokeWidth: 2, selectable:false, evented:false }));
-    objs.push(new fabric.Path(describeArc(field.left+field.width, field.top, cornerR, 90, 180), { fill:'', stroke: lineColor, strokeWidth: 2, selectable:false, evented:false }));
-    objs.push(new fabric.Path(describeArc(field.left, field.top+field.height, cornerR, 270, 360), { fill:'', stroke: lineColor, strokeWidth: 2, selectable:false, evented:false }));
-    objs.push(new fabric.Path(describeArc(field.left+field.width, field.top+field.height, cornerR, 180, 270), { fill:'', stroke: lineColor, strokeWidth: 2, selectable:false, evented:false }));
 
     pitchGroup = new fabric.Group(objs, { selectable:false, evented:false });
     pitchGroup.isPitch = true;
@@ -557,18 +408,6 @@
     canvas.add(pitchGroup);
     canvas.sendToBack(pitchGroup);
     canvas.requestRenderAll();
-  }
-
-  // Arc helpers
-  function polarToCartesian(cx, cy, r, angleDeg) {
-    const rad = (angleDeg - 90) * Math.PI / 180.0;
-    return { x: cx + (r * Math.cos(rad)), y: cy + (r * Math.sin(rad)) };
-  }
-  function describeArc(cx, cy, r, startAngle, endAngle){
-    const start = polarToCartesian(cx, cy, r, endAngle);
-    const end   = polarToCartesian(cx, cy, r, startAngle);
-    const largeArcFlag = (endAngle - startAngle) <= 180 ? "0" : "1";
-    return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
   }
 
   function rebuildPitchPreserveObjects() {
@@ -580,7 +419,7 @@
     canvas.requestRenderAll();
   }
 
-  // --- ICONS / OBJECTS ---
+  // --- OBJECT STYLE ---
   function normalizeNewObject(o){
     o.set({
       cornerColor: '#ffd400',
@@ -602,44 +441,49 @@
     });
   }
 
-  // ✅ Ball: classic football look & guaranteed visible (all coordinates local to group)
-  function makeFootball(x,y){
+  // ✅ FIXED BALL: guaranteed visible (no polygons/local weirdness)
+  function makeFootball(x, y) {
     const r = 16;
 
     const base = new fabric.Circle({
-      left: -r, top: -r, radius: r,
+      left: 0, top: 0,
+      originX: 'center', originY: 'center',
+      radius: r,
       fill: '#ffffff',
       stroke: '#111',
       strokeWidth: 2
     });
 
-    // centre pentagon
-    const pent = new fabric.RegularPolygon({
-      left: 0, top: 0,
-      originX:'center', originY:'center',
-      radius: 6,
-      sides: 5,
+    const pent = new fabric.Path(
+      'M 0 -6 L 5 -2 L 3 5 L -3 5 L -5 -2 Z',
+      {
+        left: 0, top: 0,
+        originX: 'center', originY: 'center',
+        fill: '#111',
+        stroke: '#111',
+        strokeWidth: 1
+      }
+    );
+
+    const patch = (dx, dy, pr) => new fabric.Circle({
+      left: dx, top: dy,
+      originX: 'center', originY: 'center',
+      radius: pr,
       fill: '#111'
     });
 
-    // surrounding patches (approx to match classic ball)
     const patches = [
-      {x:  0, y: -10, s: 4.5},
-      {x:  9, y: -3,  s: 4.0},
-      {x:  6, y:  9,  s: 4.2},
-      {x: -6, y:  9,  s: 4.2},
-      {x: -9, y: -3,  s: 4.0},
-    ].map(p => new fabric.RegularPolygon({
-      left: p.x, top: p.y,
-      originX:'center', originY:'center',
-      radius: p.s,
-      sides: 5,
-      fill:'#111'
-    }));
+      patch(0, -10, 3.2),
+      patch(9, -3,  3.0),
+      patch(6,  9,  3.1),
+      patch(-6, 9,  3.1),
+      patch(-9,-3,  3.0),
+    ];
 
-    // subtle seams (thin lines)
     const seam = new fabric.Circle({
-      left: -r, top: -r, radius: r,
+      left: 0, top: 0,
+      originX: 'center', originY: 'center',
+      radius: r,
       fill: 'transparent',
       stroke: 'rgba(0,0,0,0.25)',
       strokeWidth: 1
@@ -702,7 +546,7 @@
     return new fabric.Group([pole, flag], { left:x, top:y, originX:'center', originY:'center' });
   }
 
-  // ✅ Goal: keep 2D thin icon with net grid (like your reference)
+  // Goal (unchanged from your 2D preference)
   function makeGoal(x,y){
     const w = 62, h = 40;
 
@@ -720,20 +564,13 @@
 
     for(let i=1;i<cols;i++){
       const xx = -w/2 + i*(w/cols);
-      net.push(new fabric.Line([xx, -h/2, xx, h/2], {
-        stroke:'#111',
-        strokeWidth: 2
-      }));
+      net.push(new fabric.Line([xx, -h/2, xx, h/2], { stroke:'#111', strokeWidth: 2 }));
     }
     for(let j=1;j<rows;j++){
       const yy = -h/2 + j*(h/rows);
-      net.push(new fabric.Line([-w/2, yy, w/2, yy], {
-        stroke:'#111',
-        strokeWidth: 2
-      }));
+      net.push(new fabric.Line([-w/2, yy, w/2, yy], { stroke:'#111', strokeWidth: 2 }));
     }
 
-    // posts to ground (little legs)
     const leg1 = new fabric.Line([-w/2, h/2, -w/2, h/2 + 10], { stroke:'#111', strokeWidth: 3 });
     const leg2 = new fabric.Line([ w/2, h/2,  w/2, h/2 + 10], { stroke:'#111', strokeWidth: 3 });
 
@@ -819,16 +656,11 @@
     const angle = Math.atan2(y2 - y1, x2 - x1);
     const size = 10;
     return new fabric.Triangle({
-      left: x2,
-      top: y2,
-      originX: 'center',
-      originY: 'center',
+      left: x2, top: y2,
+      originX: 'center', originY: 'center',
       angle: angle * 180/Math.PI + 90,
-      width: size*1.2,
-      height: size*1.6,
-      fill: color,
-      stroke: '#111',
-      strokeWidth: 1
+      width: size*1.2, height: size*1.6,
+      fill: color, stroke: '#111', strokeWidth: 1
     });
   }
 
@@ -837,19 +669,12 @@
     lineStart = p;
     if (lineType === 'curved'){
       tempObj = new fabric.Path(`M ${p.x} ${p.y} Q ${p.x} ${p.y} ${p.x} ${p.y}`, {
-        fill: '',
-        stroke: strokeColor,
-        strokeWidth: 3,
-        selectable:false,
-        evented:false
+        fill: '', stroke: strokeColor, strokeWidth: 3, selectable:false, evented:false
       });
       canvas.add(tempObj);
     } else {
       tempObj = new fabric.Line([p.x, p.y, p.x, p.y], {
-        stroke: strokeColor,
-        strokeWidth: 3,
-        selectable:false,
-        evented:false,
+        stroke: strokeColor, strokeWidth: 3, selectable:false, evented:false,
         strokeDashArray: (lineType === 'dashed') ? [10,7] : null
       });
       canvas.add(tempObj);
@@ -878,14 +703,11 @@
       const cx = (lineStart.x + p.x)/2;
       const cy = (lineStart.y + p.y)/2 - 50;
       finalObj = new fabric.Path(`M ${lineStart.x} ${lineStart.y} Q ${cx} ${cy} ${p.x} ${p.y}`, {
-        fill: '',
-        stroke: strokeColor,
-        strokeWidth: 3
+        fill: '', stroke: strokeColor, strokeWidth: 3
       });
     } else {
       finalObj = new fabric.Line([lineStart.x, lineStart.y, p.x, p.y], {
-        stroke: strokeColor,
-        strokeWidth: 3,
+        stroke: strokeColor, strokeWidth: 3,
         strokeDashArray: (lineType === 'dashed') ? [10,7] : null
       });
     }
@@ -991,9 +813,7 @@
 
   document.getElementById('clearBtn').addEventListener('click', () => {
     pushHistory();
-    canvas.getObjects().slice().forEach(o => {
-      if (!o.isPitch) canvas.remove(o);
-    });
+    canvas.getObjects().slice().forEach(o => { if (!o.isPitch) canvas.remove(o); });
     canvas.discardActiveObject();
     canvas.requestRenderAll();
   });
@@ -1081,10 +901,7 @@
     lastDist = dist;
   }, { passive:false });
 
-  frameEl.addEventListener('touchend', () => {
-    lastTouch = null;
-    lastDist = null;
-  });
+  frameEl.addEventListener('touchend', () => { lastTouch = null; lastDist = null; });
 
   // --- EXPORT (branding BLACK) ---
   function withBrandingTemp(fn){
@@ -1180,9 +997,7 @@
     let resizeTimer = null;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        rebuildPitchPreserveObjects();
-      }, 120);
+      resizeTimer = setTimeout(() => rebuildPitchPreserveObjects(), 120);
     });
   }
 
