@@ -264,13 +264,7 @@
     </header>
 
     <div class="panel toolbar" role="region" aria-label="Toolbar">
-      <!-- Pitch is now FULL ONLY (landscape). Kept layout consistent; no pitch selector -->
-      <div class="group">
-        <label>Pitch</label>
-        <div style="color:var(--muted);font-size:13px;font-weight:700;padding:10px 10px;">
-          Full Pitch (landscape)
-        </div>
-      </div>
+      <!-- ✅ Removed “Pitch / Full Pitch (landscape)” completely -->
 
       <div class="group">
         <button class="btn primary active" id="addModeBtn" title="Add objects/lines">
@@ -351,7 +345,6 @@
 
 <script>
 (() => {
-  const canvasEl = document.getElementById('c');
   const frameEl  = document.getElementById('canvasFrame');
 
   const canvas = new fabric.Canvas('c', {
@@ -361,16 +354,13 @@
     stopContextMenu: true
   });
 
-  // Pitch layer group (locked behind)
   let pitchGroup = null;
 
-  // State
-  let mode = 'add'; // 'add' | 'edit'
+  let mode = 'add';
   let addType = document.getElementById('addType').value;
   let lineType = 'none';
   let strokeColor = document.getElementById('strokeColor').value;
 
-  // Undo/redo (JSON snapshots)
   let undoStack = [];
   let redoStack = [];
   const MAX_STACK = 40;
@@ -401,28 +391,24 @@
     pushHistory();
   }
 
-  // ----------------------------
-  // CANVAS SIZE: FULL PITCH ONLY, LANDSCAPE
-  // ----------------------------
+  // --- FULL PITCH ONLY (LANDSCAPE) ---
   function fitCanvasToFrame() {
     const r = frameEl.getBoundingClientRect();
     const w = Math.max(320, Math.floor(r.width));
-    const h = Math.floor(w * 0.58); // landscape full pitch
+    const h = Math.floor(w * 0.58); // landscape
     canvas.setWidth(w);
     canvas.setHeight(h);
     canvas.calcOffset();
     canvas.requestRenderAll();
   }
 
-  // ----------------------------
-  // PITCH: FULL ONLY (fixing “pitch wrong across all types”)
-  // ----------------------------
   function clearPitchOnly() {
     if (!pitchGroup) return;
     canvas.remove(pitchGroup);
     pitchGroup = null;
   }
 
+  // ✅ Pitch matches your reference: goals LEFT/RIGHT, halfway line VERTICAL
   function makeFullPitch() {
     clearPitchOnly();
 
@@ -445,9 +431,9 @@
       evented: false
     });
 
-    // Stripes
+    // Vertical stripes (like your image)
     const stripes = [];
-    const stripeCount = 10;
+    const stripeCount = 14;
     const stripeW = field.width / stripeCount;
     for (let i=0;i<stripeCount;i++){
       stripes.push(new fabric.Rect({
@@ -488,8 +474,8 @@
     // Outer boundary
     objs.push(R({ left: field.left, top: field.top, width: field.width, height: field.height }));
 
-    // Halfway line (horizontal)
-    objs.push(L(field.left, field.top + field.height/2, field.left + field.width, field.top + field.height/2));
+    // Halfway line VERTICAL
+    objs.push(L(field.left + field.width/2, field.top, field.left + field.width/2, field.top + field.height));
 
     // Centre circle + spot
     const ccR = Math.min(field.width, field.height) * 0.12;
@@ -503,39 +489,66 @@
       selectable:false, evented:false
     }));
 
-    // Penalty areas / goals BOTH ends
-    const boxW = field.width * 0.55;
-    const boxH = field.height * 0.18;
-    const sixW = field.width * 0.30;
-    const sixH = field.height * 0.07;
-    const goalW = field.width * 0.18;
-    const goalH = field.height * 0.02;
+    // Penalty areas LEFT + RIGHT (like your reference)
+    const boxH = field.height * 0.55; // tall box
+    const boxW = field.width * 0.18;  // depth
+    const sixH = field.height * 0.30;
+    const sixW = field.width * 0.07;
+    const goalH = field.height * 0.18;
+    const goalW = field.width * 0.02;
 
-    // Top end
-    objs.push(R({ left: field.left + (field.width - boxW)/2, top: field.top, width: boxW, height: boxH }));
-    objs.push(R({ left: field.left + (field.width - sixW)/2, top: field.top, width: sixW, height: sixH }));
-    objs.push(R({ left: field.left + (field.width - goalW)/2, top: field.top - goalH, width: goalW, height: goalH }));
+    const midY = field.top + field.height/2;
+
+    // LEFT end
+    objs.push(R({ left: field.left, top: midY - boxH/2, width: boxW, height: boxH }));
+    objs.push(R({ left: field.left, top: midY - sixH/2, width: sixW, height: sixH }));
+    // goal outline outside
+    objs.push(R({ left: field.left - goalW, top: midY - goalH/2, width: goalW, height: goalH }));
+    // penalty spot
     objs.push(new fabric.Circle({
-      left: field.left + field.width/2 - 2,
-      top: field.top + boxH*0.62 - 2,
+      left: field.left + boxW*0.62 - 2,
+      top: midY - 2,
       radius: 2,
       fill: lineColor,
       stroke: lineColor,
       selectable:false, evented:false
     }));
+    // D arc
+    const arcR = Math.min(field.width, field.height) * 0.10;
+    objs.push(new fabric.Path(describeArc(field.left + boxW, midY, arcR, 300, 60), {
+      fill:'',
+      stroke: lineColor,
+      strokeWidth: 2,
+      selectable:false,
+      evented:false
+    }));
 
-    // Bottom end
-    objs.push(R({ left: field.left + (field.width - boxW)/2, top: field.top + field.height - boxH, width: boxW, height: boxH }));
-    objs.push(R({ left: field.left + (field.width - sixW)/2, top: field.top + field.height - sixH, width: sixW, height: sixH }));
-    objs.push(R({ left: field.left + (field.width - goalW)/2, top: field.top + field.height, width: goalW, height: goalH }));
+    // RIGHT end
+    objs.push(R({ left: field.left + field.width - boxW, top: midY - boxH/2, width: boxW, height: boxH }));
+    objs.push(R({ left: field.left + field.width - sixW, top: midY - sixH/2, width: sixW, height: sixH }));
+    objs.push(R({ left: field.left + field.width, top: midY - goalH/2, width: goalW, height: goalH }));
     objs.push(new fabric.Circle({
-      left: field.left + field.width/2 - 2,
-      top: field.top + field.height - boxH*0.62 - 2,
+      left: field.left + field.width - boxW*0.62 - 2,
+      top: midY - 2,
       radius: 2,
       fill: lineColor,
       stroke: lineColor,
       selectable:false, evented:false
     }));
+    objs.push(new fabric.Path(describeArc(field.left + field.width - boxW, midY, arcR, 120, 240), {
+      fill:'',
+      stroke: lineColor,
+      strokeWidth: 2,
+      selectable:false,
+      evented:false
+    }));
+
+    // Corner arcs (small, like your reference)
+    const cornerR = Math.min(field.width, field.height) * 0.03;
+    objs.push(new fabric.Path(describeArc(field.left, field.top, cornerR, 0, 90), { fill:'', stroke: lineColor, strokeWidth: 2, selectable:false, evented:false }));
+    objs.push(new fabric.Path(describeArc(field.left+field.width, field.top, cornerR, 90, 180), { fill:'', stroke: lineColor, strokeWidth: 2, selectable:false, evented:false }));
+    objs.push(new fabric.Path(describeArc(field.left, field.top+field.height, cornerR, 270, 360), { fill:'', stroke: lineColor, strokeWidth: 2, selectable:false, evented:false }));
+    objs.push(new fabric.Path(describeArc(field.left+field.width, field.top+field.height, cornerR, 180, 270), { fill:'', stroke: lineColor, strokeWidth: 2, selectable:false, evented:false }));
 
     pitchGroup = new fabric.Group(objs, { selectable:false, evented:false });
     pitchGroup.isPitch = true;
@@ -544,6 +557,18 @@
     canvas.add(pitchGroup);
     canvas.sendToBack(pitchGroup);
     canvas.requestRenderAll();
+  }
+
+  // Arc helpers
+  function polarToCartesian(cx, cy, r, angleDeg) {
+    const rad = (angleDeg - 90) * Math.PI / 180.0;
+    return { x: cx + (r * Math.cos(rad)), y: cy + (r * Math.sin(rad)) };
+  }
+  function describeArc(cx, cy, r, startAngle, endAngle){
+    const start = polarToCartesian(cx, cy, r, endAngle);
+    const end   = polarToCartesian(cx, cy, r, startAngle);
+    const largeArcFlag = (endAngle - startAngle) <= 180 ? "0" : "1";
+    return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
   }
 
   function rebuildPitchPreserveObjects() {
@@ -555,9 +580,7 @@
     canvas.requestRenderAll();
   }
 
-  // ----------------------------
-  // ICONS
-  // ----------------------------
+  // --- ICONS / OBJECTS ---
   function normalizeNewObject(o){
     o.set({
       cornerColor: '#ffd400',
@@ -579,31 +602,53 @@
     });
   }
 
-  // FIX: ball now reliably appears (group centered properly)
+  // ✅ Ball: classic football look & guaranteed visible (all coordinates local to group)
   function makeFootball(x,y){
+    const r = 16;
+
     const base = new fabric.Circle({
-      left: -14, top: -14, radius: 14,
-      fill: '#f6f6f6',
+      left: -r, top: -r, radius: r,
+      fill: '#ffffff',
       stroke: '#111',
       strokeWidth: 2
     });
 
-    const patch = new fabric.RegularPolygon({
-      left: 0, top: -1,
-      originX: 'center', originY: 'center',
-      radius: 6, sides: 5,
+    // centre pentagon
+    const pent = new fabric.RegularPolygon({
+      left: 0, top: 0,
+      originX:'center', originY:'center',
+      radius: 6,
+      sides: 5,
       fill: '#111'
     });
 
-    const p2 = new fabric.Circle({ left: -10, top: 3, radius: 3, fill:'#111', originX:'center', originY:'center' });
-    const p3 = new fabric.Circle({ left:  10, top: 3, radius: 3, fill:'#111', originX:'center', originY:'center' });
-    const p4 = new fabric.Circle({ left:  0, top: 12, radius: 3, fill:'#111', originX:'center', originY:'center' });
+    // surrounding patches (approx to match classic ball)
+    const patches = [
+      {x:  0, y: -10, s: 4.5},
+      {x:  9, y: -3,  s: 4.0},
+      {x:  6, y:  9,  s: 4.2},
+      {x: -6, y:  9,  s: 4.2},
+      {x: -9, y: -3,  s: 4.0},
+    ].map(p => new fabric.RegularPolygon({
+      left: p.x, top: p.y,
+      originX:'center', originY:'center',
+      radius: p.s,
+      sides: 5,
+      fill:'#111'
+    }));
 
-    const g = new fabric.Group([base, patch, p2, p3, p4], {
+    // subtle seams (thin lines)
+    const seam = new fabric.Circle({
+      left: -r, top: -r, radius: r,
+      fill: 'transparent',
+      stroke: 'rgba(0,0,0,0.25)',
+      strokeWidth: 1
+    });
+
+    return new fabric.Group([base, seam, pent, ...patches], {
       left: x, top: y,
       originX:'center', originY:'center'
     });
-    return g;
   }
 
   function makeCone(x,y){
@@ -615,7 +660,6 @@
     });
   }
 
-  // Mannequin: keep simple (as you wanted), unchanged from last simple style
   function makeMannequin(x,y){
     const head = new fabric.Circle({
       left: -7, top: -26, radius: 7,
@@ -658,63 +702,45 @@
     return new fabric.Group([pole, flag], { left:x, top:y, originX:'center', originY:'center' });
   }
 
-  // FIX: Goal is now a proper goal icon (frame + depth + net), not “too simple”
+  // ✅ Goal: keep 2D thin icon with net grid (like your reference)
   function makeGoal(x,y){
-    const w = 70, h = 42;
-    const depth = 16;
+    const w = 62, h = 40;
 
-    // front frame
     const frame = new fabric.Rect({
       left: -w/2, top: -h/2,
       width: w, height: h,
       fill: 'transparent',
-      stroke: '#f6f6f6',
-      strokeWidth: 3
+      stroke: '#111',
+      strokeWidth: 3,
+      rx: 2, ry: 2
     });
 
-    // depth side/top (wireframe)
-    const side = new fabric.Polyline(
-      [
-        {x:  w/2,     y: -h/2},
-        {x:  w/2+depth, y: -h/2-depth},
-        {x:  w/2+depth, y:  h/2-depth},
-        {x:  w/2,     y:  h/2}
-      ],
-      {
-        fill: 'transparent',
-        stroke: '#f6f6f6',
-        strokeWidth: 3
-      }
-    );
+    const net = [];
+    const cols = 6, rows = 4;
 
-    const topLine = new fabric.Line([ -w/2, -h/2,  w/2+depth, -h/2-depth ], {
-      stroke:'#f6f6f6', strokeWidth:3
-    });
-
-    const bottomLine = new fabric.Line([ -w/2,  h/2,  w/2+depth,  h/2-depth ], {
-      stroke:'#f6f6f6', strokeWidth:3
-    });
-
-    // net: light grid inside front frame
-    const netLines = [];
-    const cols = 5, rows = 3;
-    for (let i=1;i<cols;i++){
+    for(let i=1;i<cols;i++){
       const xx = -w/2 + i*(w/cols);
-      netLines.push(new fabric.Line([xx, -h/2, xx, h/2], {
-        stroke:'rgba(255,255,255,0.28)', strokeWidth:2
+      net.push(new fabric.Line([xx, -h/2, xx, h/2], {
+        stroke:'#111',
+        strokeWidth: 2
       }));
     }
-    for (let j=1;j<rows;j++){
+    for(let j=1;j<rows;j++){
       const yy = -h/2 + j*(h/rows);
-      netLines.push(new fabric.Line([-w/2, yy, w/2, yy], {
-        stroke:'rgba(255,255,255,0.28)', strokeWidth:2
+      net.push(new fabric.Line([-w/2, yy, w/2, yy], {
+        stroke:'#111',
+        strokeWidth: 2
       }));
     }
 
-    const g = new fabric.Group([frame, ...netLines, side, topLine, bottomLine], {
-      left:x, top:y, originX:'center', originY:'center'
+    // posts to ground (little legs)
+    const leg1 = new fabric.Line([-w/2, h/2, -w/2, h/2 + 10], { stroke:'#111', strokeWidth: 3 });
+    const leg2 = new fabric.Line([ w/2, h/2,  w/2, h/2 + 10], { stroke:'#111', strokeWidth: 3 });
+
+    return new fabric.Group([frame, ...net, leg1, leg2], {
+      left:x, top:y,
+      originX:'center', originY:'center'
     });
-    return g;
   }
 
   function makeText(x,y){
@@ -727,12 +753,19 @@
     });
   }
 
-  // ----------------------------
-  // MODE (Add/Edit)
-  // ----------------------------
+  // --- MODE ---
   const addModeBtn  = document.getElementById('addModeBtn');
   const editModeBtn = document.getElementById('editModeBtn');
   const addControls = document.getElementById('addControls');
+
+  function refreshSelectability(){
+    canvas.getObjects().forEach(o => {
+      if (o.isPitch) return;
+      o.selectable = (mode === 'edit');
+      o.evented = (mode === 'edit');
+    });
+    canvas.requestRenderAll();
+  }
 
   function setMode(newMode){
     mode = newMode;
@@ -753,21 +786,10 @@
     refreshSelectability();
   }
 
-  function refreshSelectability(){
-    canvas.getObjects().forEach(o => {
-      if (o.isPitch) return;
-      o.selectable = (mode === 'edit');
-      o.evented = (mode === 'edit');
-    });
-    canvas.requestRenderAll();
-  }
-
   addModeBtn.addEventListener('click', () => { setMode('add'); setLineDrawing(false); });
   editModeBtn.addEventListener('click', () => { setMode('edit'); setLineDrawing(false); });
 
-  // ----------------------------
-  // UI (dropdowns/color)
-  // ----------------------------
+  // --- UI ---
   document.getElementById('addType').addEventListener('change', (e) => addType = e.target.value);
   document.getElementById('lineType').addEventListener('change', (e) => {
     lineType = e.target.value;
@@ -779,9 +801,7 @@
     if (canvas.freeDrawingBrush) canvas.freeDrawingBrush.color = strokeColor;
   });
 
-  // ----------------------------
-  // Line drawing (straight/arrow/dashed/curved/free)
-  // ----------------------------
+  // --- LINES ---
   let isDrawingLine = false;
   let lineStart = null;
   let tempObj = null;
@@ -877,7 +897,6 @@
 
     normalizeNewObject(finalObj);
     canvas.add(finalObj);
-
     finalObj.selectable = (mode === 'edit');
     finalObj.evented    = (mode === 'edit');
 
@@ -886,23 +905,19 @@
     canvas.requestRenderAll();
   }
 
-  // Fabric events
   canvas.on('mouse:down', (opt) => {
     if (mode !== 'add') return;
 
     const p = canvas.getPointer(opt.e);
 
-    // free draw handled by Fabric
     if (lineType === 'free') return;
 
-    // line tool
     if (lineType !== 'none'){
       pushHistory();
       beginLine(p);
       return;
     }
 
-    // add object
     pushHistory();
     const obj = (() => {
       switch(addType){
@@ -937,7 +952,6 @@
     finishLine(p);
   });
 
-  // After free draw path created, make it exportable & editable in edit mode
   canvas.on('path:created', (opt) => {
     if (lineType !== 'free') return;
     pushHistory();
@@ -949,7 +963,6 @@
     canvas.requestRenderAll();
   });
 
-  // Easy text edit on double click in edit mode
   canvas.on('mouse:dblclick', (opt) => {
     const t = opt.target;
     if (!t) return;
@@ -960,9 +973,7 @@
     }
   });
 
-  // ----------------------------
-  // Undo / Redo / Clear
-  // ----------------------------
+  // --- UNDO/REDO/CLEAR ---
   document.getElementById('undoBtn').addEventListener('click', () => {
     if (undoStack.length <= 1) return;
     const current = undoStack.pop();
@@ -987,9 +998,7 @@
     canvas.requestRenderAll();
   });
 
-  // ----------------------------
-  // Zoom + Pan
-  // ----------------------------
+  // --- ZOOM / PAN ---
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
   const zoomResetBtn = document.getElementById('zoomResetBtn');
@@ -1022,7 +1031,6 @@
     e.stopPropagation();
   });
 
-  // Touch pinch + two-finger pan
   let lastTouch = null;
   let lastDist = null;
 
@@ -1052,7 +1060,6 @@
       e.touches[0].clientY - e.touches[1].clientY
     );
 
-    // Zoom
     if (lastDist){
       let zoom = canvas.getZoom() * (dist / lastDist);
       zoom = clamp(zoom, 0.6, 3.2);
@@ -1061,7 +1068,6 @@
       canvas.zoomToPoint(pt, zoom);
     }
 
-    // Pan
     if (lastTouch){
       const dx = mid.x - lastTouch.x;
       const dy = mid.y - lastTouch.y;
@@ -1080,9 +1086,7 @@
     lastDist = null;
   });
 
-  // ----------------------------
-  // Export PNG / PDF (branding in BLACK)
-  // ----------------------------
+  // --- EXPORT (branding BLACK) ---
   function withBrandingTemp(fn){
     const W = canvas.getWidth();
     const H = canvas.getHeight();
@@ -1166,9 +1170,7 @@
     });
   });
 
-  // ----------------------------
-  // Init + resize
-  // ----------------------------
+  // --- INIT + RESIZE ---
   function init(){
     fitCanvasToFrame();
     makeFullPitch();
@@ -1185,7 +1187,6 @@
   }
 
   init();
-
 })();
 </script>
 </body>
