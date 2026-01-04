@@ -198,7 +198,7 @@
       overflow:hidden;
       border: 1px solid rgba(255,255,255,0.12);
       background: #0a0a0d;
-      touch-action: none; /* allow custom pinch/drag */
+      touch-action: none;
     }
 
     canvas{ display:block; }
@@ -257,26 +257,19 @@
       </div>
 
       <div class="topControls">
-        <button class="btn icon" id="zoomOutBtn" title="Zoom out">
-          <span class="ico">➖</span>
-        </button>
-        <button class="btn icon" id="zoomResetBtn" title="Reset view">
-          <span class="ico">⤾</span>
-        </button>
-        <button class="btn icon" id="zoomInBtn" title="Zoom in">
-          <span class="ico">➕</span>
-        </button>
+        <button class="btn icon" id="zoomOutBtn" title="Zoom out"><span class="ico">➖</span></button>
+        <button class="btn icon" id="zoomResetBtn" title="Reset view"><span class="ico">⤾</span></button>
+        <button class="btn icon" id="zoomInBtn" title="Zoom in"><span class="ico">➕</span></button>
       </div>
     </header>
 
     <div class="panel toolbar" role="region" aria-label="Toolbar">
+      <!-- Pitch is now FULL ONLY (landscape). Kept layout consistent; no pitch selector -->
       <div class="group">
-        <label for="pitchType">Pitch</label>
-        <select id="pitchType">
-          <option value="full" selected>Full Pitch</option>
-          <option value="half">Half Pitch (vertical)</option>
-          <option value="blank">Blank</option>
-        </select>
+        <label>Pitch</label>
+        <div style="color:var(--muted);font-size:13px;font-weight:700;padding:10px 10px;">
+          Full Pitch (landscape)
+        </div>
       </div>
 
       <div class="group">
@@ -294,7 +287,7 @@
         <label for="addType">Add</label>
         <select id="addType">
           <option value="player">Player</option>
-          <option value="ball">Ball</option>
+          <option value="ball" selected>Ball</option>
           <option value="cone">Cone</option>
           <option value="goal">Goal</option>
           <option value="mannequin">Mannequin</option>
@@ -358,9 +351,6 @@
 
 <script>
 (() => {
-  // ----------------------------
-  // Canvas / sizing
-  // ----------------------------
   const canvasEl = document.getElementById('c');
   const frameEl  = document.getElementById('canvasFrame');
 
@@ -371,30 +361,29 @@
     stopContextMenu: true
   });
 
-  // Keep a pitch layer group (not selectable) so it always stays behind.
+  // Pitch layer group (locked behind)
   let pitchGroup = null;
 
   // State
   let mode = 'add'; // 'add' | 'edit'
-  let addType = 'player';
+  let addType = document.getElementById('addType').value;
   let lineType = 'none';
   let strokeColor = document.getElementById('strokeColor').value;
 
-  // Undo/redo (simple JSON snapshots)
+  // Undo/redo (JSON snapshots)
   let undoStack = [];
   let redoStack = [];
   const MAX_STACK = 40;
 
   function pushHistory() {
     redoStack.length = 0;
-    const json = canvas.toJSON(['idTag', 'isPitch']);
+    const json = canvas.toJSON(['isPitch']);
     undoStack.push(json);
     if (undoStack.length > MAX_STACK) undoStack.shift();
   }
 
   function loadFrom(json) {
     canvas.loadFromJSON(json, () => {
-      // Ensure pitch objects remain non-selectable
       canvas.getObjects().forEach(o => {
         if (o.isPitch) {
           o.selectable = false;
@@ -406,7 +395,6 @@
     });
   }
 
-  // Initial history state
   function resetHistory() {
     undoStack = [];
     redoStack = [];
@@ -414,57 +402,38 @@
   }
 
   // ----------------------------
-  // Responsive sizing + pitch types
+  // CANVAS SIZE: FULL PITCH ONLY, LANDSCAPE
   // ----------------------------
-  const pitchTypeSel = document.getElementById('pitchType');
-
   function fitCanvasToFrame() {
     const r = frameEl.getBoundingClientRect();
     const w = Math.max(320, Math.floor(r.width));
-
-    const type = pitchTypeSel.value;
-    // Full pitch: wide
-    // Half pitch: vertical AND canvas itself is half pitch (taller feel but only half length)
-    // Blank: same as full
-    let h;
-    if (type === 'half') {
-      // vertical half pitch: make canvas taller relative to width
-      h = Math.floor(w * 1.25);
-    } else {
-      h = Math.floor(w * 0.58); // similar to a full pitch aspect
-    }
-
+    const h = Math.floor(w * 0.58); // landscape full pitch
     canvas.setWidth(w);
     canvas.setHeight(h);
     canvas.calcOffset();
     canvas.requestRenderAll();
   }
 
+  // ----------------------------
+  // PITCH: FULL ONLY (fixing “pitch wrong across all types”)
+  // ----------------------------
   function clearPitchOnly() {
     if (!pitchGroup) return;
     canvas.remove(pitchGroup);
     pitchGroup = null;
   }
 
-  function makePitch(type) {
+  function makeFullPitch() {
     clearPitchOnly();
 
-    if (type === 'blank') {
-      canvas.setBackgroundColor('#0a0a0d', canvas.requestRenderAll.bind(canvas));
-      return;
-    }
-
-    // Pitch drawing parameters
     const W = canvas.getWidth();
     const H = canvas.getHeight();
     const margin = Math.max(18, Math.floor(Math.min(W,H) * 0.04));
 
-    // pitch colors
     const pitchFill = '#1d6a3a';
     const pitchStripe = '#1a6135';
     const lineColor = '#f7f7f7';
 
-    // Base field rect
     const field = new fabric.Rect({
       left: margin,
       top: margin,
@@ -479,7 +448,7 @@
     // Stripes
     const stripes = [];
     const stripeCount = 10;
-    const stripeW = (field.width) / stripeCount;
+    const stripeW = field.width / stripeCount;
     for (let i=0;i<stripeCount;i++){
       stripes.push(new fabric.Rect({
         left: field.left + i*stripeW,
@@ -492,12 +461,8 @@
       }));
     }
 
-    // Helper to create white lines
-    const L = (...args) => new fabric.Line(args, {
-      stroke: lineColor,
-      strokeWidth: 2,
-      selectable:false,
-      evented:false
+    const L = (x1,y1,x2,y2) => new fabric.Line([x1,y1,x2,y2], {
+      stroke: lineColor, strokeWidth: 2, selectable:false, evented:false
     });
 
     const R = (opts) => new fabric.Rect({
@@ -518,160 +483,61 @@
       ...opts
     });
 
-    const objects = [...stripes, field];
+    const objs = [...stripes, field];
 
     // Outer boundary
-    objects.push(R({
-      left: field.left,
-      top: field.top,
-      width: field.width,
-      height: field.height
+    objs.push(R({ left: field.left, top: field.top, width: field.width, height: field.height }));
+
+    // Halfway line (horizontal)
+    objs.push(L(field.left, field.top + field.height/2, field.left + field.width, field.top + field.height/2));
+
+    // Centre circle + spot
+    const ccR = Math.min(field.width, field.height) * 0.12;
+    objs.push(C({ left: field.left + field.width/2 - ccR, top: field.top + field.height/2 - ccR, radius: ccR }));
+    objs.push(new fabric.Circle({
+      left: field.left + field.width/2 - 2,
+      top: field.top + field.height/2 - 2,
+      radius: 2,
+      fill: lineColor,
+      stroke: lineColor,
+      selectable:false, evented:false
     }));
 
-    if (type === 'full') {
-      // Halfway line
-      objects.push(L(field.left, field.top + field.height/2, field.left + field.width, field.top + field.height/2));
+    // Penalty areas / goals BOTH ends
+    const boxW = field.width * 0.55;
+    const boxH = field.height * 0.18;
+    const sixW = field.width * 0.30;
+    const sixH = field.height * 0.07;
+    const goalW = field.width * 0.18;
+    const goalH = field.height * 0.02;
 
-      // Centre circle + spot
-      const ccR = Math.min(field.width, field.height) * 0.12;
-      objects.push(C({ left: field.left + field.width/2 - ccR, top: field.top + field.height/2 - ccR, radius: ccR }));
-      objects.push(new fabric.Circle({
-        left: field.left + field.width/2 - 2,
-        top: field.top + field.height/2 - 2,
-        radius: 2,
-        fill: lineColor,
-        stroke: lineColor,
-        selectable:false, evented:false
-      }));
+    // Top end
+    objs.push(R({ left: field.left + (field.width - boxW)/2, top: field.top, width: boxW, height: boxH }));
+    objs.push(R({ left: field.left + (field.width - sixW)/2, top: field.top, width: sixW, height: sixH }));
+    objs.push(R({ left: field.left + (field.width - goalW)/2, top: field.top - goalH, width: goalW, height: goalH }));
+    objs.push(new fabric.Circle({
+      left: field.left + field.width/2 - 2,
+      top: field.top + boxH*0.62 - 2,
+      radius: 2,
+      fill: lineColor,
+      stroke: lineColor,
+      selectable:false, evented:false
+    }));
 
-      // Penalty areas / goals at BOTH ends (this fixes “missing boxes on half the pitch” in full pitch)
-      const boxW = field.width * 0.55;
-      const boxH = field.height * 0.18;
-      const sixW = field.width * 0.30;
-      const sixH = field.height * 0.07;
-      const goalW = field.width * 0.18;
-      const goalH = field.height * 0.02;
+    // Bottom end
+    objs.push(R({ left: field.left + (field.width - boxW)/2, top: field.top + field.height - boxH, width: boxW, height: boxH }));
+    objs.push(R({ left: field.left + (field.width - sixW)/2, top: field.top + field.height - sixH, width: sixW, height: sixH }));
+    objs.push(R({ left: field.left + (field.width - goalW)/2, top: field.top + field.height, width: goalW, height: goalH }));
+    objs.push(new fabric.Circle({
+      left: field.left + field.width/2 - 2,
+      top: field.top + field.height - boxH*0.62 - 2,
+      radius: 2,
+      fill: lineColor,
+      stroke: lineColor,
+      selectable:false, evented:false
+    }));
 
-      // Top end
-      objects.push(R({
-        left: field.left + (field.width - boxW)/2,
-        top: field.top,
-        width: boxW,
-        height: boxH
-      }));
-      objects.push(R({
-        left: field.left + (field.width - sixW)/2,
-        top: field.top,
-        width: sixW,
-        height: sixH
-      }));
-      // Goal (simple)
-      objects.push(R({
-        left: field.left + (field.width - goalW)/2,
-        top: field.top - goalH,
-        width: goalW,
-        height: goalH
-      }));
-      // Penalty spot
-      objects.push(new fabric.Circle({
-        left: field.left + field.width/2 - 2,
-        top: field.top + boxH*0.62 - 2,
-        radius: 2,
-        fill: lineColor,
-        stroke: lineColor,
-        selectable:false, evented:false
-      }));
-
-      // Bottom end
-      objects.push(R({
-        left: field.left + (field.width - boxW)/2,
-        top: field.top + field.height - boxH,
-        width: boxW,
-        height: boxH
-      }));
-      objects.push(R({
-        left: field.left + (field.width - sixW)/2,
-        top: field.top + field.height - sixH,
-        width: sixW,
-        height: sixH
-      }));
-      objects.push(R({
-        left: field.left + (field.width - goalW)/2,
-        top: field.top + field.height,
-        width: goalW,
-        height: goalH
-      }));
-      objects.push(new fabric.Circle({
-        left: field.left + field.width/2 - 2,
-        top: field.top + field.height - boxH*0.62 - 2,
-        radius: 2,
-        fill: lineColor,
-        stroke: lineColor,
-        selectable:false, evented:false
-      }));
-    }
-
-    if (type === 'half') {
-      // TRUE HALF PITCH (vertical): from halfway line down to one goal.
-      // Canvas is already taller, and we draw: halfway line at bottom, goal at top.
-      // No random corner arcs.
-
-      // Halfway line across the bottom edge of field
-      objects.push(L(field.left, field.top + field.height, field.left + field.width, field.top + field.height));
-
-      // Centre circle is off-canvas in half pitch; show just the centre arc at the bottom edge (simple, no corner weirdness)
-      const ccR = Math.min(field.width, field.height) * 0.20;
-      const arcPath = describeArc(field.left + field.width/2, field.top + field.height, ccR, 180, 0);
-      objects.push(new fabric.Path(arcPath, {
-        fill: '',
-        stroke: lineColor,
-        strokeWidth: 2,
-        selectable:false,
-        evented:false
-      }));
-
-      // Penalty area at TOP end
-      const boxW = field.width * 0.62;
-      const boxH = field.height * 0.26;
-      const sixW = field.width * 0.34;
-      const sixH = field.height * 0.10;
-      const goalW = field.width * 0.22;
-      const goalH = field.height * 0.03;
-
-      objects.push(R({
-        left: field.left + (field.width - boxW)/2,
-        top: field.top,
-        width: boxW,
-        height: boxH
-      }));
-      objects.push(R({
-        left: field.left + (field.width - sixW)/2,
-        top: field.top,
-        width: sixW,
-        height: sixH
-      }));
-      objects.push(R({
-        left: field.left + (field.width - goalW)/2,
-        top: field.top - goalH,
-        width: goalW,
-        height: goalH
-      }));
-      // Penalty spot
-      objects.push(new fabric.Circle({
-        left: field.left + field.width/2 - 2,
-        top: field.top + boxH*0.62 - 2,
-        radius: 2,
-        fill: lineColor,
-        stroke: lineColor,
-        selectable:false, evented:false
-      }));
-    }
-
-    // Mark pitch objects
-    pitchGroup = new fabric.Group(objects, {
-      selectable:false,
-      evented:false
-    });
+    pitchGroup = new fabric.Group(objs, { selectable:false, evented:false });
     pitchGroup.isPitch = true;
     pitchGroup.excludeFromExport = false;
 
@@ -680,152 +546,18 @@
     canvas.requestRenderAll();
   }
 
-  // Arc helper (SVG path)
-  function polarToCartesian(cx, cy, r, angleDeg) {
-    const rad = (angleDeg - 90) * Math.PI / 180.0;
-    return { x: cx + (r * Math.cos(rad)), y: cy + (r * Math.sin(rad)) };
-  }
-  function describeArc(cx, cy, r, startAngle, endAngle){
-    const start = polarToCartesian(cx, cy, r, endAngle);
-    const end   = polarToCartesian(cx, cy, r, startAngle);
-    const largeArcFlag = (endAngle - startAngle) <= 180 ? "0" : "1";
-    return [
-      "M", start.x, start.y,
-      "A", r, r, 0, largeArcFlag, 0, end.x, end.y
-    ].join(" ");
-  }
-
-  // Rebuild pitch on resize/type change without touching drawn objects
   function rebuildPitchPreserveObjects() {
-    // Grab non-pitch objects
     const keep = canvas.getObjects().filter(o => !o.isPitch);
     clearPitchOnly();
     fitCanvasToFrame();
-    makePitch(pitchTypeSel.value);
-    // Re-add keep objects on top
+    makeFullPitch();
     keep.forEach(o => canvas.add(o));
     canvas.requestRenderAll();
   }
 
   // ----------------------------
-  // Simple “v1 style” icons (ONLY mannequin + goal updated as requested)
+  // ICONS
   // ----------------------------
-  function makePlayer(x,y){
-    return new fabric.Circle({
-      left: x-16, top: y-16, radius: 16,
-      fill: '#ffd400',
-      stroke: '#111',
-      strokeWidth: 2
-    });
-  }
-
-  function makeFootball(x,y){
-    // football-like: white circle + black patches
-    const base = new fabric.Circle({
-      left: x-14, top: y-14, radius: 14,
-      fill: '#f6f6f6',
-      stroke: '#111',
-      strokeWidth: 2
-    });
-    const patch = new fabric.RegularPolygon({
-      left: x-6, top: y-6,
-      radius: 6, sides: 5,
-      fill: '#111'
-    });
-    const p2 = new fabric.Circle({ left:x-12, top:y-2, radius:3, fill:'#111' });
-    const p3 = new fabric.Circle({ left:x+6, top:y-2, radius:3, fill:'#111' });
-    const p4 = new fabric.Circle({ left:x-3, top:y+7, radius:3, fill:'#111' });
-    return new fabric.Group([base, patch, p2, p3, p4], { left:x, top:y, originX:'center', originY:'center' });
-  }
-
-  function makeCone(x,y){
-    const tri = new fabric.Triangle({
-      left: x-14, top: y-16, width: 28, height: 32,
-      fill: '#ff9f1a',
-      stroke: '#111',
-      strokeWidth: 2
-    });
-    return tri;
-  }
-
-  // ✅ Mannequin: revert to simple v1-style (head + torso silhouette)
-  function makeMannequin(x,y){
-    const head = new fabric.Circle({
-      left: x-7, top: y-26, radius: 7,
-      fill: '#e6e6e6',
-      stroke: '#111',
-      strokeWidth: 2
-    });
-    const body = new fabric.Rect({
-      left: x-10, top: y-18,
-      width: 20, height: 48,
-      rx: 8, ry: 8,
-      fill: '#e6e6e6',
-      stroke: '#111',
-      strokeWidth: 2
-    });
-    return new fabric.Group([body, head], { left:x, top:y, originX:'center', originY:'center' });
-  }
-
-  // Pole + Flag (kept as-is from current “perfect” version style)
-  function makePole(x,y){
-    const pole = new fabric.Rect({
-      left: x-3, top: y-28, width: 6, height: 56,
-      fill: '#d0d0d0',
-      stroke:'#111',
-      strokeWidth: 2
-    });
-    return pole;
-  }
-
-  function makeFlag(x,y){
-    const pole = new fabric.Rect({
-      left: x-3, top: y-30, width: 6, height: 60,
-      fill: '#d0d0d0',
-      stroke:'#111',
-      strokeWidth: 2
-    });
-    const flag = new fabric.Path(`M ${x+3} ${y-26} L ${x+30} ${y-18} L ${x+3} ${y-8} Z`, {
-      fill: '#ff3b30',
-      stroke:'#111',
-      strokeWidth: 2
-    });
-    return new fabric.Group([pole, flag], { left:x, top:y, originX:'center', originY:'center' });
-  }
-
-  // ✅ Goal: revert to simple v1-style (clean goal frame)
-  function makeGoal(x,y){
-    const w = 46, h = 26;
-    const frame = new fabric.Rect({
-      left: x - w/2, top: y - h/2,
-      width: w, height: h,
-      fill: 'transparent',
-      stroke: '#f6f6f6',
-      strokeWidth: 3
-    });
-    const net = new fabric.Line([x - w/2, y, x + w/2, y], {
-      stroke: '#f6f6f6',
-      strokeWidth: 2,
-      strokeDashArray: [4,4]
-    });
-    return new fabric.Group([frame, net], { left:x, top:y, originX:'center', originY:'center' });
-  }
-
-  function makeText(x,y){
-    const t = new fabric.IText('Text', {
-      left: x, top: y,
-      fill: '#ffffff',
-      fontSize: 20,
-      fontWeight: '700',
-      stroke: '#111',
-      strokeWidth: 0,
-      editable: true
-    });
-    // Make editing easy: single tap to enter editing in edit mode
-    return t;
-  }
-
-  // Ensure new objects are editable
   function normalizeNewObject(o){
     o.set({
       cornerColor: '#ffd400',
@@ -838,8 +570,165 @@
     return o;
   }
 
+  function makePlayer(x,y){
+    return new fabric.Circle({
+      left: x-16, top: y-16, radius: 16,
+      fill: '#ffd400',
+      stroke: '#111',
+      strokeWidth: 2
+    });
+  }
+
+  // FIX: ball now reliably appears (group centered properly)
+  function makeFootball(x,y){
+    const base = new fabric.Circle({
+      left: -14, top: -14, radius: 14,
+      fill: '#f6f6f6',
+      stroke: '#111',
+      strokeWidth: 2
+    });
+
+    const patch = new fabric.RegularPolygon({
+      left: 0, top: -1,
+      originX: 'center', originY: 'center',
+      radius: 6, sides: 5,
+      fill: '#111'
+    });
+
+    const p2 = new fabric.Circle({ left: -10, top: 3, radius: 3, fill:'#111', originX:'center', originY:'center' });
+    const p3 = new fabric.Circle({ left:  10, top: 3, radius: 3, fill:'#111', originX:'center', originY:'center' });
+    const p4 = new fabric.Circle({ left:  0, top: 12, radius: 3, fill:'#111', originX:'center', originY:'center' });
+
+    const g = new fabric.Group([base, patch, p2, p3, p4], {
+      left: x, top: y,
+      originX:'center', originY:'center'
+    });
+    return g;
+  }
+
+  function makeCone(x,y){
+    return new fabric.Triangle({
+      left: x-14, top: y-16, width: 28, height: 32,
+      fill: '#ff9f1a',
+      stroke: '#111',
+      strokeWidth: 2
+    });
+  }
+
+  // Mannequin: keep simple (as you wanted), unchanged from last simple style
+  function makeMannequin(x,y){
+    const head = new fabric.Circle({
+      left: -7, top: -26, radius: 7,
+      fill: '#e6e6e6',
+      stroke: '#111',
+      strokeWidth: 2
+    });
+    const body = new fabric.Rect({
+      left: -10, top: -18,
+      width: 20, height: 48,
+      rx: 8, ry: 8,
+      fill: '#e6e6e6',
+      stroke: '#111',
+      strokeWidth: 2
+    });
+    return new fabric.Group([body, head], { left:x, top:y, originX:'center', originY:'center' });
+  }
+
+  function makePole(x,y){
+    return new fabric.Rect({
+      left: x-3, top: y-28, width: 6, height: 56,
+      fill: '#d0d0d0',
+      stroke:'#111',
+      strokeWidth: 2
+    });
+  }
+
+  function makeFlag(x,y){
+    const pole = new fabric.Rect({
+      left: -3, top: -30, width: 6, height: 60,
+      fill: '#d0d0d0',
+      stroke:'#111',
+      strokeWidth: 2
+    });
+    const flag = new fabric.Path(`M 3 -26 L 30 -18 L 3 -8 Z`, {
+      fill: '#ff3b30',
+      stroke:'#111',
+      strokeWidth: 2
+    });
+    return new fabric.Group([pole, flag], { left:x, top:y, originX:'center', originY:'center' });
+  }
+
+  // FIX: Goal is now a proper goal icon (frame + depth + net), not “too simple”
+  function makeGoal(x,y){
+    const w = 70, h = 42;
+    const depth = 16;
+
+    // front frame
+    const frame = new fabric.Rect({
+      left: -w/2, top: -h/2,
+      width: w, height: h,
+      fill: 'transparent',
+      stroke: '#f6f6f6',
+      strokeWidth: 3
+    });
+
+    // depth side/top (wireframe)
+    const side = new fabric.Polyline(
+      [
+        {x:  w/2,     y: -h/2},
+        {x:  w/2+depth, y: -h/2-depth},
+        {x:  w/2+depth, y:  h/2-depth},
+        {x:  w/2,     y:  h/2}
+      ],
+      {
+        fill: 'transparent',
+        stroke: '#f6f6f6',
+        strokeWidth: 3
+      }
+    );
+
+    const topLine = new fabric.Line([ -w/2, -h/2,  w/2+depth, -h/2-depth ], {
+      stroke:'#f6f6f6', strokeWidth:3
+    });
+
+    const bottomLine = new fabric.Line([ -w/2,  h/2,  w/2+depth,  h/2-depth ], {
+      stroke:'#f6f6f6', strokeWidth:3
+    });
+
+    // net: light grid inside front frame
+    const netLines = [];
+    const cols = 5, rows = 3;
+    for (let i=1;i<cols;i++){
+      const xx = -w/2 + i*(w/cols);
+      netLines.push(new fabric.Line([xx, -h/2, xx, h/2], {
+        stroke:'rgba(255,255,255,0.28)', strokeWidth:2
+      }));
+    }
+    for (let j=1;j<rows;j++){
+      const yy = -h/2 + j*(h/rows);
+      netLines.push(new fabric.Line([-w/2, yy, w/2, yy], {
+        stroke:'rgba(255,255,255,0.28)', strokeWidth:2
+      }));
+    }
+
+    const g = new fabric.Group([frame, ...netLines, side, topLine, bottomLine], {
+      left:x, top:y, originX:'center', originY:'center'
+    });
+    return g;
+  }
+
+  function makeText(x,y){
+    return new fabric.IText('Text', {
+      left: x, top: y,
+      fill: '#ffffff',
+      fontSize: 20,
+      fontWeight: '700',
+      editable: true
+    });
+  }
+
   // ----------------------------
-  // Add / edit modes
+  // MODE (Add/Edit)
   // ----------------------------
   const addModeBtn  = document.getElementById('addModeBtn');
   const editModeBtn = document.getElementById('editModeBtn');
@@ -861,21 +750,23 @@
       editModeBtn.classList.remove('active');
       addControls.style.opacity = '1';
     }
+    refreshSelectability();
+  }
+
+  function refreshSelectability(){
+    canvas.getObjects().forEach(o => {
+      if (o.isPitch) return;
+      o.selectable = (mode === 'edit');
+      o.evented = (mode === 'edit');
+    });
     canvas.requestRenderAll();
   }
 
-  addModeBtn.addEventListener('click', () => {
-    setMode('add');
-    setLineDrawing(false);
-  });
-
-  editModeBtn.addEventListener('click', () => {
-    setMode('edit');
-    setLineDrawing(false);
-  });
+  addModeBtn.addEventListener('click', () => { setMode('add'); setLineDrawing(false); });
+  editModeBtn.addEventListener('click', () => { setMode('edit'); setLineDrawing(false); });
 
   // ----------------------------
-  // Dropdowns / color
+  // UI (dropdowns/color)
   // ----------------------------
   document.getElementById('addType').addEventListener('change', (e) => addType = e.target.value);
   document.getElementById('lineType').addEventListener('change', (e) => {
@@ -889,7 +780,7 @@
   });
 
   // ----------------------------
-  // Line drawing tools (straight/arrow/dashed/curved/free)
+  // Line drawing (straight/arrow/dashed/curved/free)
   // ----------------------------
   let isDrawingLine = false;
   let lineStart = null;
@@ -948,7 +839,6 @@
   function updateLine(p){
     if (!tempObj) return;
     if (lineType === 'curved'){
-      // Control point in the middle, lifted a bit for a gentle curve
       const cx = (lineStart.x + p.x)/2;
       const cy = (lineStart.y + p.y)/2 - 50;
       tempObj.set({ path: [['M', lineStart.x, lineStart.y], ['Q', cx, cy, p.x, p.y]] });
@@ -960,8 +850,6 @@
 
   function finishLine(p){
     isDrawingLine = false;
-
-    // Remove temp and replace with final (selectable = true in edit mode only)
     canvas.remove(tempObj);
 
     let finalObj = null;
@@ -990,7 +878,6 @@
     normalizeNewObject(finalObj);
     canvas.add(finalObj);
 
-    // Respect mode: selectable only in edit
     finalObj.selectable = (mode === 'edit');
     finalObj.evented    = (mode === 'edit');
 
@@ -1005,17 +892,17 @@
 
     const p = canvas.getPointer(opt.e);
 
-    // If free draw, Fabric handles it
+    // free draw handled by Fabric
     if (lineType === 'free') return;
 
-    // If a line type selected (not none), draw line
+    // line tool
     if (lineType !== 'none'){
       pushHistory();
       beginLine(p);
       return;
     }
 
-    // Otherwise add an object
+    // add object
     pushHistory();
     const obj = (() => {
       switch(addType){
@@ -1062,23 +949,11 @@
     canvas.requestRenderAll();
   });
 
-  // Make selectability follow mode (so you can always go back to adding)
-  function refreshSelectability(){
-    canvas.getObjects().forEach(o => {
-      if (o.isPitch) return;
-      o.selectable = (mode === 'edit');
-      o.evented = (mode === 'edit');
-    });
-    canvas.requestRenderAll();
-  }
-
-  // Easy text editing: in edit mode, double click/tap text to edit
+  // Easy text edit on double click in edit mode
   canvas.on('mouse:dblclick', (opt) => {
     const t = opt.target;
     if (!t) return;
     if (mode !== 'edit') return;
-
-    // If group contains text, ignore; only IText
     if (t.type === 'i-text'){
       t.enterEditing();
       t.hiddenTextarea && t.hiddenTextarea.focus();
@@ -1113,19 +988,7 @@
   });
 
   // ----------------------------
-  // Pitch type changes
-  // ----------------------------
-  pitchTypeSel.addEventListener('change', () => {
-    // IMPORTANT: half pitch changes the canvas size too (as requested).
-    // Preserve objects and pitch rebuild.
-    rebuildPitchPreserveObjects();
-    // keep current mode behavior
-    refreshSelectability();
-    pushHistory();
-  });
-
-  // ----------------------------
-  // Zoom + Pan (mouse + touch)
+  // Zoom + Pan
   // ----------------------------
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
@@ -1147,7 +1010,6 @@
     canvas.requestRenderAll();
   });
 
-  // Mouse wheel zoom
   canvas.on('mouse:wheel', (opt) => {
     const e = opt.e;
     const delta = e.deltaY;
@@ -1179,7 +1041,6 @@
 
   frameEl.addEventListener('touchmove', (e) => {
     if (e.touches.length !== 2) return;
-
     e.preventDefault();
 
     const mid = {
@@ -1195,7 +1056,6 @@
     if (lastDist){
       let zoom = canvas.getZoom() * (dist / lastDist);
       zoom = clamp(zoom, 0.6, 3.2);
-
       const rect = frameEl.getBoundingClientRect();
       const pt = new fabric.Point(mid.x - rect.left, mid.y - rect.top);
       canvas.zoomToPoint(pt, zoom);
@@ -1227,7 +1087,6 @@
     const W = canvas.getWidth();
     const H = canvas.getHeight();
 
-    // Add black branding text temporarily (export only)
     const brand = new fabric.Text('TactiGrid', {
       left: W - 14,
       top: H - 14,
@@ -1253,7 +1112,6 @@
 
   document.getElementById('exportPngBtn').addEventListener('click', () => {
     withBrandingTemp(() => {
-      // multiplier improves clarity and preserves colours
       const dataUrl = canvas.toDataURL({ format:'png', multiplier: 2, enableRetinaScaling: true });
       const a = document.createElement('a');
       a.href = dataUrl;
@@ -1262,7 +1120,7 @@
     });
   });
 
-  document.getElementById('exportPdfBtn').addEventListener('click', async () => {
+  document.getElementById('exportPdfBtn').addEventListener('click', () => {
     const notesText = document.getElementById('notes').value || '';
 
     withBrandingTemp(() => {
@@ -1272,15 +1130,12 @@
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
 
-      // Render canvas image
       const img = canvas.toDataURL({ format:'png', multiplier: 2, enableRetinaScaling: true });
 
-      // Fit image to page with margins
       const margin = 36;
       const maxW = pageW - margin*2;
-      const maxH = pageH * 0.58; // leave room for notes below
+      const maxH = pageH * 0.58;
 
-      // Image aspect ratio
       const imgW = canvas.getWidth();
       const imgH = canvas.getHeight();
       const scale = Math.min(maxW / imgW, maxH / imgH);
@@ -1293,19 +1148,16 @@
 
       pdf.addImage(img, 'PNG', x, y, drawW, drawH);
 
-      // Title / branding (BLACK)
       pdf.setTextColor(0,0,0);
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(14);
       pdf.text('TactiGrid Drill Designer', margin, y + drawH + 28);
 
-      // Notes
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(11);
-      const wrapped = pdf.splitTextToSize(notesText, pageW - margin*2);
+      const wrapped = pdf.splitTextToSize(notesText || '—', pageW - margin*2);
       pdf.text(wrapped, margin, y + drawH + 52);
 
-      // Footer branding in BLACK
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(10);
       pdf.text('TactiGrid', pageW - margin, pageH - 18, { align:'right' });
@@ -1315,37 +1167,19 @@
   });
 
   // ----------------------------
-  // Keep everything consistent when switching modes
-  // ----------------------------
-  function applyModeToExistingObjects(){
-    canvas.getObjects().forEach(o => {
-      if (o.isPitch) return;
-      o.selectable = (mode === 'edit');
-      o.evented = (mode === 'edit');
-    });
-    canvas.requestRenderAll();
-  }
-
-  // When mode changes, update existing objects
-  addModeBtn.addEventListener('click', applyModeToExistingObjects);
-  editModeBtn.addEventListener('click', applyModeToExistingObjects);
-
-  // ----------------------------
-  // Init
+  // Init + resize
   // ----------------------------
   function init(){
     fitCanvasToFrame();
-    makePitch(pitchTypeSel.value);
+    makeFullPitch();
     resetHistory();
     setMode('add');
 
-    // On window resize
     let resizeTimer = null;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         rebuildPitchPreserveObjects();
-        refreshSelectability();
       }, 120);
     });
   }
