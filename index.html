@@ -23,6 +23,7 @@
       --shadow: 0 10px 30px rgba(0,0,0,0.35);
       --radius: 14px;
     }
+
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
     body{
@@ -33,40 +34,102 @@
       color:var(--text);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
-    .wrap{ max-width:1200px; margin:0 auto; padding:18px 14px 40px; }
-    header{ display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px; }
-    .brand{ display:flex; align-items:center; gap:10px; user-select:none; }
-    .logoMark{
-      width:34px; height:34px; border-radius:10px;
-      background: linear-gradient(135deg, rgba(255,212,0,0.95), rgba(255,212,0,0.65));
-      box-shadow: 0 10px 25px rgba(255,212,0,0.18);
-      position:relative;
+
+    .wrap{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 18px 14px 40px;
     }
-    .logoMark:after{
-      content:""; position:absolute; inset:8px; border-radius:8px;
-      border:2px solid rgba(0,0,0,0.55);
+
+    header{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom: 14px;
     }
-    .brand h1{ font-size:18px; margin:0; letter-spacing:0.2px; font-weight:800; }
-    .brand .sub{ margin:0; font-size:12px; color:var(--muted); margin-top:2px; }
-    .topControls{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      user-select:none;
+      min-width: 0;
+    }
+
+    /* ✅ logo image (your generated logo) */
+    .brandLogo{
+      height: 42px;
+      width: auto;
+      display:block;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    }
+
+    .brandText{
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+    }
+
+    .brand h1{
+      font-size: 18px;
+      margin:0;
+      letter-spacing: 0.2px;
+      font-weight: 800;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .brand .sub{
+      margin:0;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top:2px;
+    }
+
+    .topControls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
 
     .panel{
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 70%), var(--panel);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 70%),
+                  var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
     }
-    .toolbar{ display:flex; gap:10px; padding:12px; align-items:center; flex-wrap:wrap; }
-    .group{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-      padding:6px 8px;
-      background: rgba(255,255,255,0.02);
-      border:1px solid rgba(255,255,255,0.07);
-      border-radius:12px;
-    }
-    label{ font-size:12px; color:var(--muted); margin-right:4px; white-space:nowrap; }
 
-    select, input[type="color"], textarea{
+    .toolbar{
+      display:flex;
+      gap:10px;
+      padding: 12px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .group{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      padding: 6px 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+    }
+
+    label{
+      font-size: 12px;
+      color: var(--muted);
+      margin-right: 4px;
+      white-space:nowrap;
+    }
+
+    select, input[type="color"], input[type="text"], textarea{
       background: var(--panel2);
       color: var(--text);
       border: 1px solid rgba(255,255,255,0.10);
@@ -75,53 +138,110 @@
       outline:none;
       font-size: 14px;
     }
-    input[type="color"]{ padding:0; width:44px; height:38px; border-radius:10px; }
+
+    input[type="color"]{
+      padding: 0;
+      width: 44px;
+      height: 38px;
+      border-radius: 10px;
+    }
+
+    input[type="text"]{
+      height: 38px;
+      min-width: 180px;
+    }
 
     .btn{
       appearance:none;
-      border:1px solid rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.12);
       background: rgba(255,255,255,0.04);
       color: var(--text);
-      padding:10px 12px;
-      border-radius:12px;
+      padding: 10px 12px;
+      border-radius: 12px;
       cursor:pointer;
-      font-weight:700;
+      font-weight: 700;
       display:inline-flex;
       gap:10px;
       align-items:center;
       transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease;
       user-select:none;
     }
-    .btn:hover{ background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); }
+    .btn:hover{
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.18);
+    }
     .btn:active{ transform: translateY(1px); }
-    .btn.primary{ background: rgba(255,212,0,0.14); border-color: rgba(255,212,0,0.35); }
-    .btn.primary:hover{ background: rgba(255,212,0,0.18); border-color: rgba(255,212,0,0.55); }
-    .btn.icon{ padding:10px 12px; min-width:44px; justify-content:center; }
-    .btn.active{ outline:2px solid rgba(255,212,0,0.55); outline-offset:1px; }
 
-    .ico{ width:18px; height:18px; display:inline-block; }
+    .btn.primary{
+      background: rgba(255,212,0,0.14);
+      border-color: rgba(255,212,0,0.35);
+    }
+    .btn.primary:hover{
+      background: rgba(255,212,0,0.18);
+      border-color: rgba(255,212,0,0.55);
+    }
 
-    .layout{ display:grid; grid-template-columns:1fr; gap:14px; margin-top:14px; }
-    .canvasPanel{ padding:12px; }
+    .btn.icon{
+      padding: 10px 12px;
+      min-width: 44px;
+      justify-content:center;
+    }
+
+    .btn.active{
+      outline: 2px solid rgba(255,212,0,0.55);
+      outline-offset: 1px;
+    }
+
+    .ico{
+      width: 18px; height: 18px; display:inline-block;
+    }
+
+    /* ✅ Notes/export UNDER the canvas now */
+    .stack{
+      display:flex;
+      flex-direction:column;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .canvasPanel{ padding: 12px; }
+
     .canvasFrame{
       width:100%;
-      border-radius:14px;
+      border-radius: 14px;
       overflow:hidden;
       border: 1px solid rgba(255,255,255,0.12);
-      background:#0a0a0d;
-      touch-action:none;
+      background: #0a0a0d;
+      touch-action: none;
     }
+
     canvas{ display:block; }
 
-    .notesPanel{ padding:12px; }
-    .notesPanel h2{ margin:0 0 8px 0; font-size:14px; letter-spacing:0.2px; }
-    textarea{ width:100%; min-height:120px; resize:vertical; line-height:1.35; }
-    .exportRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
-    .hint{ color:var(--muted); font-size:12px; margin-top:10px; line-height:1.35; }
+    .hint{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+      line-height: 1.35;
+    }
 
-    @media (min-width: 860px){
-      .layout{ grid-template-columns: 1fr 380px; align-items:start; }
-      .notesPanel{ position: sticky; top: 14px; }
+    .notesPanel{ padding: 12px; }
+    .notesPanel h2{
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      letter-spacing:0.2px;
+    }
+    textarea{
+      width:100%;
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.35;
+    }
+
+    .exportRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -130,8 +250,9 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <div class="logoMark" aria-hidden="true"></div>
-        <div>
+        <!-- ✅ Put your generated black-background logo in the repo as tactigrid-logo.png -->
+        <img class="brandLogo" src="tactigrid-logo.png" alt="TactiGrid logo" />
+        <div class="brandText">
           <h1>TactiGrid Drill Designer</h1>
           <p class="sub">Design drills, add notes, export PNG/PDF</p>
         </div>
@@ -181,6 +302,10 @@
 
         <label for="strokeColor">Colour</label>
         <input type="color" id="strokeColor" value="#ffd400" />
+
+        <!-- ✅ Player label default -->
+        <label for="playerLabel">Player label</label>
+        <input type="text" id="playerLabel" placeholder="e.g. 7 / Al / GK" />
       </div>
 
       <div class="group">
@@ -190,16 +315,18 @@
       </div>
     </div>
 
-    <div class="layout">
+    <div class="stack">
       <div class="panel canvasPanel">
         <div class="canvasFrame" id="canvasFrame">
           <canvas id="c"></canvas>
         </div>
         <div class="hint">
           Tips: Use <b>Edit</b> to move/resize/rotate. Pinch to zoom on mobile. Two-finger drag to pan.
+          Double-click a <b>player</b> in Edit to rename it.
         </div>
       </div>
 
+      <!-- ✅ Notes + export buttons now UNDER the tool -->
       <div class="panel notesPanel">
         <h2>Notes</h2>
         <textarea id="notes" placeholder="Write session notes here... (included in PDF export)"></textarea>
@@ -246,7 +373,7 @@
 
   function pushHistory() {
     redoStack.length = 0;
-    const json = canvas.toJSON(['isPitch']);
+    const json = canvas.toJSON(['isPitch','isPlayer','playerText']);
     undoStack.push(json);
     if (undoStack.length > MAX_STACK) undoStack.shift();
   }
@@ -270,7 +397,7 @@
     pushHistory();
   }
 
-  // --- FULL PITCH ONLY (LANDSCAPE) ---
+  // --- CANVAS SIZE (landscape) ---
   function fitCanvasToFrame() {
     const r = frameEl.getBoundingClientRect();
     const w = Math.max(320, Math.floor(r.width));
@@ -287,7 +414,7 @@
     pitchGroup = null;
   }
 
-  // ✅ FIXED PITCH: standard (goals top/bottom, halfway line horizontal)
+  // ✅ PITCH: Landscape with goals LEFT + RIGHT, halfway line VERTICAL
   function makeFullPitch() {
     clearPitchOnly();
 
@@ -310,6 +437,7 @@
       evented: false
     });
 
+    // vertical stripes
     const stripes = [];
     const stripeCount = 14;
     const stripeW = field.width / stripeCount;
@@ -352,8 +480,8 @@
     // Boundary
     objs.push(R({ left: field.left, top: field.top, width: field.width, height: field.height }));
 
-    // Halfway line
-    objs.push(L(field.left, field.top + field.height/2, field.left + field.width, field.top + field.height/2));
+    // Halfway line (vertical)
+    objs.push(L(field.left + field.width/2, field.top, field.left + field.width/2, field.top + field.height));
 
     // Centre circle + spot
     const ccR = Math.min(field.width, field.height) * 0.12;
@@ -367,34 +495,35 @@
       selectable:false, evented:false
     }));
 
-    // Boxes + goals top/bottom
-    const boxW = field.width * 0.55;
-    const boxH = field.height * 0.18;
-    const sixW = field.width * 0.30;
-    const sixH = field.height * 0.07;
-    const goalW = field.width * 0.18;
-    const goalH = field.height * 0.02;
+    // Boxes + goals LEFT / RIGHT
+    const boxH = field.height * 0.55;
+    const boxW = field.width * 0.18;
+    const sixH = field.height * 0.30;
+    const sixW = field.width * 0.07;
+    const goalH = field.height * 0.18;
+    const goalW = field.width * 0.02;
+    const midY = field.top + field.height/2;
 
-    // Top end
-    objs.push(R({ left: field.left + (field.width - boxW)/2, top: field.top, width: boxW, height: boxH }));
-    objs.push(R({ left: field.left + (field.width - sixW)/2, top: field.top, width: sixW, height: sixH }));
-    objs.push(R({ left: field.left + (field.width - goalW)/2, top: field.top - goalH, width: goalW, height: goalH }));
+    // Left end
+    objs.push(R({ left: field.left, top: midY - boxH/2, width: boxW, height: boxH }));
+    objs.push(R({ left: field.left, top: midY - sixH/2, width: sixW, height: sixH }));
+    objs.push(R({ left: field.left - goalW, top: midY - goalH/2, width: goalW, height: goalH }));
     objs.push(new fabric.Circle({
-      left: field.left + field.width/2 - 2,
-      top: field.top + boxH*0.62 - 2,
+      left: field.left + boxW*0.62 - 2,
+      top: midY - 2,
       radius: 2,
       fill: lineColor,
       stroke: lineColor,
       selectable:false, evented:false
     }));
 
-    // Bottom end
-    objs.push(R({ left: field.left + (field.width - boxW)/2, top: field.top + field.height - boxH, width: boxW, height: boxH }));
-    objs.push(R({ left: field.left + (field.width - sixW)/2, top: field.top + field.height - sixH, width: sixW, height: sixH }));
-    objs.push(R({ left: field.left + (field.width - goalW)/2, top: field.top + field.height, width: goalW, height: goalH }));
+    // Right end
+    objs.push(R({ left: field.left + field.width - boxW, top: midY - boxH/2, width: boxW, height: boxH }));
+    objs.push(R({ left: field.left + field.width - sixW, top: midY - sixH/2, width: sixW, height: sixH }));
+    objs.push(R({ left: field.left + field.width, top: midY - goalH/2, width: goalW, height: goalH }));
     objs.push(new fabric.Circle({
-      left: field.left + field.width/2 - 2,
-      top: field.top + field.height - boxH*0.62 - 2,
+      left: field.left + field.width - boxW*0.62 - 2,
+      top: midY - 2,
       radius: 2,
       fill: lineColor,
       stroke: lineColor,
@@ -419,7 +548,7 @@
     canvas.requestRenderAll();
   }
 
-  // --- OBJECT STYLE ---
+  // --- Helpers ---
   function normalizeNewObject(o){
     o.set({
       cornerColor: '#ffd400',
@@ -432,19 +561,51 @@
     return o;
   }
 
-  function makePlayer(x,y){
-    return new fabric.Circle({
+  function hexToRgb(hex){
+    const h = hex.replace('#','').trim();
+    const full = h.length === 3 ? h.split('').map(c=>c+c).join('') : h;
+    const num = parseInt(full, 16);
+    return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
+  }
+
+  function bestTextColor(bgHex){
+    const {r,g,b} = hexToRgb(bgHex);
+    const luminance = (0.2126*r + 0.7152*g + 0.0722*b) / 255;
+    return luminance > 0.6 ? '#111' : '#fff';
+  }
+
+  // --- Objects (now use colour picker) ---
+  function makePlayer(x,y, fillHex, labelText){
+    const circle = new fabric.Circle({
       left: x-16, top: y-16, radius: 16,
-      fill: '#ffd400',
+      fill: fillHex,
       stroke: '#111',
       strokeWidth: 2
     });
+
+    const label = new fabric.Text(labelText || '', {
+      left: x, top: y,
+      originX:'center', originY:'center',
+      fill: bestTextColor(fillHex),
+      fontSize: 14,
+      fontWeight: '800',
+      selectable:false,
+      evented:false
+    });
+
+    const g = new fabric.Group([circle, label], {
+      left: x, top: y,
+      originX:'center', originY:'center'
+    });
+
+    g.isPlayer = true;
+    g.playerText = labelText || '';
+    return g;
   }
 
-  // ✅ FIXED BALL: guaranteed visible (no polygons/local weirdness)
+  // ball (works reliably)
   function makeFootball(x, y) {
     const r = 16;
-
     const base = new fabric.Circle({
       left: 0, top: 0,
       originX: 'center', originY: 'center',
@@ -495,19 +656,19 @@
     });
   }
 
-  function makeCone(x,y){
+  function makeCone(x,y, fillHex){
     return new fabric.Triangle({
       left: x-14, top: y-16, width: 28, height: 32,
-      fill: '#ff9f1a',
+      fill: fillHex,
       stroke: '#111',
       strokeWidth: 2
     });
   }
 
-  function makeMannequin(x,y){
+  function makeMannequin(x,y, fillHex){
     const head = new fabric.Circle({
       left: -7, top: -26, radius: 7,
-      fill: '#e6e6e6',
+      fill: fillHex,
       stroke: '#111',
       strokeWidth: 2
     });
@@ -515,64 +676,62 @@
       left: -10, top: -18,
       width: 20, height: 48,
       rx: 8, ry: 8,
-      fill: '#e6e6e6',
+      fill: fillHex,
       stroke: '#111',
       strokeWidth: 2
     });
     return new fabric.Group([body, head], { left:x, top:y, originX:'center', originY:'center' });
   }
 
-  function makePole(x,y){
+  function makePole(x,y, fillHex){
     return new fabric.Rect({
       left: x-3, top: y-28, width: 6, height: 56,
-      fill: '#d0d0d0',
+      fill: fillHex,
       stroke:'#111',
       strokeWidth: 2
     });
   }
 
-  function makeFlag(x,y){
+  function makeFlag(x,y, fillHex){
     const pole = new fabric.Rect({
       left: -3, top: -30, width: 6, height: 60,
-      fill: '#d0d0d0',
+      fill: fillHex,
       stroke:'#111',
       strokeWidth: 2
     });
     const flag = new fabric.Path(`M 3 -26 L 30 -18 L 3 -8 Z`, {
-      fill: '#ff3b30',
+      fill: fillHex,
       stroke:'#111',
       strokeWidth: 2
     });
     return new fabric.Group([pole, flag], { left:x, top:y, originX:'center', originY:'center' });
   }
 
-  // Goal (unchanged from your 2D preference)
-  function makeGoal(x,y){
+  // 2D goal; colour picker affects stroke/net colour
+  function makeGoal(x,y, strokeHex){
     const w = 62, h = 40;
-
     const frame = new fabric.Rect({
       left: -w/2, top: -h/2,
       width: w, height: h,
       fill: 'transparent',
-      stroke: '#111',
+      stroke: strokeHex,
       strokeWidth: 3,
       rx: 2, ry: 2
     });
 
     const net = [];
     const cols = 6, rows = 4;
-
     for(let i=1;i<cols;i++){
       const xx = -w/2 + i*(w/cols);
-      net.push(new fabric.Line([xx, -h/2, xx, h/2], { stroke:'#111', strokeWidth: 2 }));
+      net.push(new fabric.Line([xx, -h/2, xx, h/2], { stroke: strokeHex, strokeWidth: 2 }));
     }
     for(let j=1;j<rows;j++){
       const yy = -h/2 + j*(h/rows);
-      net.push(new fabric.Line([-w/2, yy, w/2, yy], { stroke:'#111', strokeWidth: 2 }));
+      net.push(new fabric.Line([-w/2, yy, w/2, yy], { stroke: strokeHex, strokeWidth: 2 }));
     }
 
-    const leg1 = new fabric.Line([-w/2, h/2, -w/2, h/2 + 10], { stroke:'#111', strokeWidth: 3 });
-    const leg2 = new fabric.Line([ w/2, h/2,  w/2, h/2 + 10], { stroke:'#111', strokeWidth: 3 });
+    const leg1 = new fabric.Line([-w/2, h/2, -w/2, h/2 + 10], { stroke: strokeHex, strokeWidth: 3 });
+    const leg2 = new fabric.Line([ w/2, h/2,  w/2, h/2 + 10], { stroke: strokeHex, strokeWidth: 3 });
 
     return new fabric.Group([frame, ...net, leg1, leg2], {
       left:x, top:y,
@@ -590,7 +749,7 @@
     });
   }
 
-  // --- MODE ---
+  // --- Mode ---
   const addModeBtn  = document.getElementById('addModeBtn');
   const editModeBtn = document.getElementById('editModeBtn');
   const addControls = document.getElementById('addControls');
@@ -627,18 +786,36 @@
   editModeBtn.addEventListener('click', () => { setMode('edit'); setLineDrawing(false); });
 
   // --- UI ---
-  document.getElementById('addType').addEventListener('change', (e) => addType = e.target.value);
-  document.getElementById('lineType').addEventListener('change', (e) => {
+  const addTypeEl = document.getElementById('addType');
+  const lineTypeEl = document.getElementById('lineType');
+  const colorEl = document.getElementById('strokeColor');
+  const playerLabelEl = document.getElementById('playerLabel');
+
+  addTypeEl.addEventListener('change', (e) => {
+    addType = e.target.value;
+
+    // ✅ easier switching: picking an object auto-stops line tool
+    if (lineType !== 'none') {
+      lineType = 'none';
+      lineTypeEl.value = 'none';
+      setLineDrawing(false);
+    }
+  });
+
+  lineTypeEl.addEventListener('change', (e) => {
     lineType = e.target.value;
+
+    // ✅ easier switching: picking a line tool instantly works
     if (mode === 'add' && lineType === 'free') setLineDrawing(true);
     else setLineDrawing(false);
   });
-  document.getElementById('strokeColor').addEventListener('input', (e) => {
+
+  colorEl.addEventListener('input', (e) => {
     strokeColor = e.target.value;
     if (canvas.freeDrawingBrush) canvas.freeDrawingBrush.color = strokeColor;
   });
 
-  // --- LINES ---
+  // --- Lines ---
   let isDrawingLine = false;
   let lineStart = null;
   let tempObj = null;
@@ -727,10 +904,12 @@
     canvas.requestRenderAll();
   }
 
+  // --- Canvas events ---
   canvas.on('mouse:down', (opt) => {
     if (mode !== 'add') return;
 
     const p = canvas.getPointer(opt.e);
+    const chosen = strokeColor; // ✅ colour picker affects objects too
 
     if (lineType === 'free') return;
 
@@ -743,15 +922,15 @@
     pushHistory();
     const obj = (() => {
       switch(addType){
-        case 'player': return makePlayer(p.x, p.y);
+        case 'player': return makePlayer(p.x, p.y, chosen, playerLabelEl.value.trim());
         case 'ball': return makeFootball(p.x, p.y);
-        case 'cone': return makeCone(p.x, p.y);
-        case 'goal': return makeGoal(p.x, p.y);
-        case 'mannequin': return makeMannequin(p.x, p.y);
-        case 'pole': return makePole(p.x, p.y);
-        case 'flag': return makeFlag(p.x, p.y);
+        case 'cone': return makeCone(p.x, p.y, chosen);
+        case 'goal': return makeGoal(p.x, p.y, chosen);
+        case 'mannequin': return makeMannequin(p.x, p.y, chosen);
+        case 'pole': return makePole(p.x, p.y, chosen);
+        case 'flag': return makeFlag(p.x, p.y, chosen);
         case 'text': return makeText(p.x, p.y);
-        default: return makePlayer(p.x, p.y);
+        default: return makeCone(p.x, p.y, chosen);
       }
     })();
 
@@ -785,17 +964,37 @@
     canvas.requestRenderAll();
   });
 
+  // ✅ Double-click a player in Edit to rename (simple + reliable)
   canvas.on('mouse:dblclick', (opt) => {
     const t = opt.target;
-    if (!t) return;
-    if (mode !== 'edit') return;
+    if (!t || mode !== 'edit') return;
+
+    // Edit normal IText
     if (t.type === 'i-text'){
       t.enterEditing();
       t.hiddenTextarea && t.hiddenTextarea.focus();
+      return;
+    }
+
+    // Rename player group
+    if (t.type === 'group' && t.isPlayer){
+      const current = t.playerText || '';
+      const next = prompt('Player name/number:', current);
+      if (next === null) return;
+
+      t.playerText = next;
+
+      // find the text object inside group (second object)
+      const txtObj = t._objects && t._objects[1];
+      if (txtObj && (txtObj.type === 'text' || txtObj.type === 'i-text')){
+        txtObj.text = next;
+      }
+      canvas.requestRenderAll();
+      pushHistory();
     }
   });
 
-  // --- UNDO/REDO/CLEAR ---
+  // --- Undo / Redo / Clear ---
   document.getElementById('undoBtn').addEventListener('click', () => {
     if (undoStack.length <= 1) return;
     const current = undoStack.pop();
@@ -818,7 +1017,7 @@
     canvas.requestRenderAll();
   });
 
-  // --- ZOOM / PAN ---
+  // --- Zoom + Pan ---
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
   const zoomResetBtn = document.getElementById('zoomResetBtn');
@@ -851,6 +1050,7 @@
     e.stopPropagation();
   });
 
+  // Touch pinch + two-finger pan
   let lastTouch = null;
   let lastDist = null;
 
@@ -901,9 +1101,12 @@
     lastDist = dist;
   }, { passive:false });
 
-  frameEl.addEventListener('touchend', () => { lastTouch = null; lastDist = null; });
+  frameEl.addEventListener('touchend', () => {
+    lastTouch = null;
+    lastDist = null;
+  });
 
-  // --- EXPORT (branding BLACK) ---
+  // --- Export (branding black) ---
   function withBrandingTemp(fn){
     const W = canvas.getWidth();
     const H = canvas.getHeight();
@@ -987,7 +1190,7 @@
     });
   });
 
-  // --- INIT + RESIZE ---
+  // --- Init + resize ---
   function init(){
     fitCanvasToFrame();
     makeFullPitch();
