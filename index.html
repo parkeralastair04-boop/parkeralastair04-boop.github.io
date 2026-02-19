@@ -11,6 +11,9 @@
   <!-- jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
+  <!-- ✅ FFmpeg.wasm (for MP4 conversion) -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/ffmpeg.min.js"></script>
+
   <style>
     :root{
       --bg:#0b0b0f;
@@ -57,7 +60,6 @@
       min-width: 0;
     }
 
-    /* ✅ logo image (your generated logo) */
     .brandLogo{
       height: 42px;
       width: auto;
@@ -196,7 +198,6 @@
       width: 18px; height: 18px; display:inline-block;
     }
 
-    /* ✅ Notes/export UNDER the canvas now */
     .stack{
       display:flex;
       flex-direction:column;
@@ -250,7 +251,6 @@
   <div class="wrap">
     <header>
       <div class="brand">
-        <!-- ✅ Put your generated black-background logo in the repo as tactigrid-logo.png -->
         <img class="brandLogo" src="tactigrid-logo.png" alt="TactiGrid logo" />
         <div class="brandText">
           <h1>TactiGrid Drill Designer</h1>
@@ -303,7 +303,6 @@
         <label for="strokeColor">Colour</label>
         <input type="color" id="strokeColor" value="#ffd400" />
 
-        <!-- ✅ Player label default -->
         <label for="playerLabel">Player label</label>
         <input type="text" id="playerLabel" placeholder="e.g. 7 / Al / GK" />
       </div>
@@ -312,6 +311,28 @@
         <button class="btn" id="undoBtn" title="Undo">Undo</button>
         <button class="btn" id="redoBtn" title="Redo">Redo</button>
         <button class="btn" id="clearBtn" title="Clear all">Clear</button>
+      </div>
+
+      <!-- ✅ SEQUENCES (FRAMES) CONTROLS -->
+      <div class="group" id="sequenceGroup" style="gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <strong style="font-size:13px;opacity:.9;">Sequences</strong>
+          <span id="frameLabel" style="font-size:12px;opacity:.85;">Frame 1 / 1</span>
+        </div>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn icon" id="prevFrameBtn" title="Previous frame">◀</button>
+          <button class="btn icon" id="nextFrameBtn" title="Next frame">▶</button>
+          <button class="btn" id="addFrameBtn" title="Add new frame (duplicates current)">＋ Frame</button>
+          <button class="btn" id="delFrameBtn" title="Delete current frame">🗑</button>
+          <button class="btn" id="playFramesBtn" title="Play / Stop">▶ Play</button>
+
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;opacity:.9;">
+            ms/frame
+            <input id="frameMs" type="number" min="100" step="50" value="800"
+              style="width:86px;background:#0f1017;border:1px solid #2a2d3a;color:#fff;border-radius:10px;padding:6px 8px;">
+          </label>
+        </div>
       </div>
     </div>
 
@@ -326,7 +347,6 @@
         </div>
       </div>
 
-      <!-- ✅ Notes + export buttons now UNDER the tool -->
       <div class="panel notesPanel">
         <h2>Notes</h2>
         <textarea id="notes" placeholder="Write session notes here... (included in PDF export)"></textarea>
@@ -339,6 +359,16 @@
           <button class="btn primary" id="exportPdfBtn" title="Export PDF">
             <span class="ico" aria-hidden="true">📄</span>
             Export PDF
+          </button>
+
+          <!-- ✅ VIDEO EXPORT BUTTONS -->
+          <button class="btn primary" id="exportWebmBtn" title="Export the sequence as WebM video">
+            <span class="ico" aria-hidden="true">🎥</span>
+            Export Video (WebM)
+          </button>
+          <button class="btn" id="exportMp4Btn" title="Convert to MP4 (heavier, may take longer on some devices)">
+            <span class="ico" aria-hidden="true">🎞</span>
+            Export MP4
           </button>
         </div>
 
@@ -371,11 +401,38 @@
   let redoStack = [];
   const MAX_STACK = 40;
 
+  // -------------------- ✅ SEQUENCES (FRAMES) STATE --------------------
+  let frames = [null];     // array of Fabric canvas JSON snapshots
+  let currentFrame = 0;
+
+  let isPlaying = false;
+  let playToken = 0;       // cancels async playback loops
+
+  function updateFrameLabel(){
+    const el = document.getElementById('frameLabel');
+    if (!el) return;
+    el.textContent = `Frame ${currentFrame + 1} / ${frames.length}`;
+  }
+
+  function captureCurrentFrame(){
+    const json = canvas.toJSON(['isPitch','isPlayer','playerText']);
+    frames[currentFrame] = json;
+    return json;
+  }
+
+  function relinkPitchGroup(){
+    pitchGroup = canvas.getObjects().find(o => o && o.isPitch) || null;
+  }
+
+  // -------------------- History --------------------
   function pushHistory() {
     redoStack.length = 0;
     const json = canvas.toJSON(['isPitch','isPlayer','playerText']);
     undoStack.push(json);
     if (undoStack.length > MAX_STACK) undoStack.shift();
+
+    // ✅ keep current frame snapshot up-to-date so switching frames doesn't lose work
+    if (frames && frames.length) frames[currentFrame] = json;
   }
 
   function loadFrom(json) {
@@ -387,7 +444,28 @@
           o.excludeFromExport = false;
         }
       });
+
+      // ✅ re-link pitchGroup after any load (important for resize/pitch rebuild)
+      relinkPitchGroup();
+
       canvas.requestRenderAll();
+    });
+  }
+
+  function loadFromAsync(json){
+    return new Promise((resolve) => {
+      canvas.loadFromJSON(json, () => {
+        canvas.getObjects().forEach(o => {
+          if (o.isPitch) {
+            o.selectable = false;
+            o.evented = false;
+            o.excludeFromExport = false;
+          }
+        });
+        relinkPitchGroup();
+        canvas.requestRenderAll();
+        resolve();
+      });
     });
   }
 
@@ -397,7 +475,65 @@
     pushHistory();
   }
 
-  // --- CANVAS SIZE (landscape) ---
+  // -------------------- ✅ SEQUENCES (FRAMES) FUNCTIONS --------------------
+  async function loadFrame(index){
+    if (index < 0 || index >= frames.length) return;
+
+    // save current before switching
+    captureCurrentFrame();
+
+    currentFrame = index;
+
+    // if frame is empty, base it on current canvas snapshot
+    const json = frames[currentFrame] || canvas.toJSON(['isPitch','isPlayer','playerText']);
+    frames[currentFrame] = json;
+
+    await loadFromAsync(json);
+    resetHistory();
+    updateFrameLabel();
+  }
+
+  async function addFrameDuplicateCurrent(){
+    const json = captureCurrentFrame();
+    frames.splice(currentFrame + 1, 0, json);
+    await loadFrame(currentFrame + 1);
+  }
+
+  async function deleteCurrentFrame(){
+    if (frames.length <= 1) return; // always keep at least 1 frame
+    frames.splice(currentFrame, 1);
+    currentFrame = Math.min(currentFrame, frames.length - 1);
+    await loadFrame(currentFrame);
+  }
+
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  async function startPlayback(){
+    if (isPlaying) return;
+    isPlaying = true;
+    document.getElementById('playFramesBtn').textContent = '⏹ Stop';
+
+    const myToken = ++playToken;
+
+    const msInput = document.getElementById('frameMs');
+    const msPerFrame = msInput ? Math.max(100, Number(msInput.value) || 800) : 800;
+
+    while (isPlaying && myToken === playToken){
+      for (let i = 0; i < frames.length; i++){
+        if (!isPlaying || myToken !== playToken) break;
+        await loadFrame(i);
+        await sleep(msPerFrame);
+      }
+    }
+  }
+
+  function stopPlayback(){
+    isPlaying = false;
+    playToken++;
+    document.getElementById('playFramesBtn').textContent = '▶ Play';
+  }
+
+  // -------------------- CANVAS SIZE (landscape) --------------------
   function fitCanvasToFrame() {
     const r = frameEl.getBoundingClientRect();
     const w = Math.max(320, Math.floor(r.width));
@@ -437,7 +573,6 @@
       evented: false
     });
 
-    // vertical stripes
     const stripes = [];
     const stripeCount = 14;
     const stripeW = field.width / stripeCount;
@@ -477,13 +612,9 @@
 
     const objs = [...stripes, field];
 
-    // Boundary
     objs.push(R({ left: field.left, top: field.top, width: field.width, height: field.height }));
-
-    // Halfway line (vertical)
     objs.push(L(field.left + field.width/2, field.top, field.left + field.width/2, field.top + field.height));
 
-    // Centre circle + spot
     const ccR = Math.min(field.width, field.height) * 0.12;
     objs.push(C({ left: field.left + field.width/2 - ccR, top: field.top + field.height/2 - ccR, radius: ccR }));
     objs.push(new fabric.Circle({
@@ -495,7 +626,6 @@
       selectable:false, evented:false
     }));
 
-    // Boxes + goals LEFT / RIGHT
     const boxH = field.height * 0.55;
     const boxW = field.width * 0.18;
     const sixH = field.height * 0.30;
@@ -504,7 +634,6 @@
     const goalW = field.width * 0.02;
     const midY = field.top + field.height/2;
 
-    // Left end
     objs.push(R({ left: field.left, top: midY - boxH/2, width: boxW, height: boxH }));
     objs.push(R({ left: field.left, top: midY - sixH/2, width: sixW, height: sixH }));
     objs.push(R({ left: field.left - goalW, top: midY - goalH/2, width: goalW, height: goalH }));
@@ -517,7 +646,6 @@
       selectable:false, evented:false
     }));
 
-    // Right end
     objs.push(R({ left: field.left + field.width - boxW, top: midY - boxH/2, width: boxW, height: boxH }));
     objs.push(R({ left: field.left + field.width - sixW, top: midY - sixH/2, width: sixW, height: sixH }));
     objs.push(R({ left: field.left + field.width, top: midY - goalH/2, width: goalW, height: goalH }));
@@ -603,7 +731,6 @@
     return g;
   }
 
-  // ball (works reliably)
   function makeFootball(x, y) {
     const r = 16;
     const base = new fabric.Circle({
@@ -707,7 +834,6 @@
     return new fabric.Group([pole, flag], { left:x, top:y, originX:'center', originY:'center' });
   }
 
-  // 2D goal; colour picker affects stroke/net colour
   function makeGoal(x,y, strokeHex){
     const w = 62, h = 40;
     const frame = new fabric.Rect({
@@ -793,8 +919,6 @@
 
   addTypeEl.addEventListener('change', (e) => {
     addType = e.target.value;
-
-    // ✅ easier switching: picking an object auto-stops line tool
     if (lineType !== 'none') {
       lineType = 'none';
       lineTypeEl.value = 'none';
@@ -804,8 +928,6 @@
 
   lineTypeEl.addEventListener('change', (e) => {
     lineType = e.target.value;
-
-    // ✅ easier switching: picking a line tool instantly works
     if (mode === 'add' && lineType === 'free') setLineDrawing(true);
     else setLineDrawing(false);
   });
@@ -909,7 +1031,7 @@
     if (mode !== 'add') return;
 
     const p = canvas.getPointer(opt.e);
-    const chosen = strokeColor; // ✅ colour picker affects objects too
+    const chosen = strokeColor;
 
     if (lineType === 'free') return;
 
@@ -964,19 +1086,16 @@
     canvas.requestRenderAll();
   });
 
-  // ✅ Double-click a player in Edit to rename (simple + reliable)
   canvas.on('mouse:dblclick', (opt) => {
     const t = opt.target;
     if (!t || mode !== 'edit') return;
 
-    // Edit normal IText
     if (t.type === 'i-text'){
       t.enterEditing();
       t.hiddenTextarea && t.hiddenTextarea.focus();
       return;
     }
 
-    // Rename player group
     if (t.type === 'group' && t.isPlayer){
       const current = t.playerText || '';
       const next = prompt('Player name/number:', current);
@@ -984,7 +1103,6 @@
 
       t.playerText = next;
 
-      // find the text object inside group (second object)
       const txtObj = t._objects && t._objects[1];
       if (txtObj && (txtObj.type === 'text' || txtObj.type === 'i-text')){
         txtObj.text = next;
@@ -1015,6 +1133,28 @@
     canvas.getObjects().slice().forEach(o => { if (!o.isPitch) canvas.remove(o); });
     canvas.discardActiveObject();
     canvas.requestRenderAll();
+  });
+
+  // -------------------- ✅ SEQUENCES UI LISTENERS --------------------
+  document.getElementById('prevFrameBtn').addEventListener('click', async () => {
+    await loadFrame(Math.max(0, currentFrame - 1));
+  });
+
+  document.getElementById('nextFrameBtn').addEventListener('click', async () => {
+    await loadFrame(Math.min(frames.length - 1, currentFrame + 1));
+  });
+
+  document.getElementById('addFrameBtn').addEventListener('click', async () => {
+    await addFrameDuplicateCurrent();
+  });
+
+  document.getElementById('delFrameBtn').addEventListener('click', async () => {
+    await deleteCurrentFrame();
+  });
+
+  document.getElementById('playFramesBtn').addEventListener('click', async () => {
+    if (isPlaying) stopPlayback();
+    else await startPlayback();
   });
 
   // --- Zoom + Pan ---
@@ -1050,7 +1190,6 @@
     e.stopPropagation();
   });
 
-  // Touch pinch + two-finger pan
   let lastTouch = null;
   let lastDist = null;
 
@@ -1190,12 +1329,136 @@
     });
   });
 
+  // -------------------- ✅ VIDEO EXPORT (WEBM + MP4) --------------------
+  function getBestRecorderMimeType(){
+    const candidates = [
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+    for (const t of candidates){
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return '';
+  }
+
+  async function exportSequenceAsWebM(){
+    captureCurrentFrame();
+
+    const fps = 30;
+    const stream = canvas.lowerCanvasEl.captureStream(fps);
+    const mimeType = getBestRecorderMimeType();
+
+    const chunks = [];
+    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) chunks.push(e.data);
+    };
+
+    const originalFrame = currentFrame;
+    const msInput = document.getElementById('frameMs');
+    const msPerFrame = msInput ? Math.max(100, Number(msInput.value) || 800) : 800;
+
+    recorder.start();
+
+    for (let i = 0; i < frames.length; i++){
+      await loadFrame(i);
+      await sleep(80);
+      canvas.requestRenderAll();
+      await sleep(msPerFrame);
+    }
+
+    recorder.stop();
+
+    const blob = await new Promise((resolve) => {
+      recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType || 'video/webm' }));
+    });
+
+    await loadFrame(originalFrame);
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tactigrid-sequence.webm';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    return blob;
+  }
+
+  async function convertWebMToMP4(webmBlob){
+    // UMD build exposes FFmpeg on window
+    if (!window.FFmpeg || !window.FFmpeg.createFFmpeg || !window.FFmpeg.fetchFile){
+      throw new Error('FFmpeg not loaded');
+    }
+
+    const { createFFmpeg, fetchFile } = window.FFmpeg;
+    const ffmpeg = createFFmpeg({ log: false });
+
+    await ffmpeg.load();
+    ffmpeg.FS('writeFile', 'input.webm', await fetchFile(webmBlob));
+
+    // Convert to MP4 (H.264)
+    await ffmpeg.run(
+      '-i', 'input.webm',
+      '-c:v', 'libx264',
+      '-pix_fmt', 'yuv420p',
+      'output.mp4'
+    );
+
+    const data = ffmpeg.FS('readFile', 'output.mp4');
+    return new Blob([data.buffer], { type: 'video/mp4' });
+  }
+
+  async function exportSequenceAsMP4(){
+    const webmBlob = await exportSequenceAsWebM();
+    const mp4Blob = await convertWebMToMP4(webmBlob);
+
+    const url = URL.createObjectURL(mp4Blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tactigrid-sequence.mp4';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('exportWebmBtn').addEventListener('click', async () => {
+    try{
+      await exportSequenceAsWebM();
+    }catch(err){
+      alert('Video export failed: ' + (err?.message || err));
+      console.error(err);
+    }
+  });
+
+  document.getElementById('exportMp4Btn').addEventListener('click', async () => {
+    try{
+      await exportSequenceAsMP4();
+    }catch(err){
+      alert(
+        'MP4 export failed (can happen on slower devices/browsers).\n\n' +
+        'Try Export Video (WebM) instead.\n\n' +
+        'Error: ' + (err?.message || err)
+      );
+      console.error(err);
+    }
+  });
+
   // --- Init + resize ---
   function init(){
     fitCanvasToFrame();
     makeFullPitch();
     resetHistory();
     setMode('add');
+
+    // ✅ init sequences with current canvas as Frame 1
+    frames = [undoStack[undoStack.length - 1]];
+    currentFrame = 0;
+    updateFrameLabel();
 
     let resizeTimer = null;
     window.addEventListener('resize', () => {
