@@ -16,7 +16,7 @@
 
   <style>
     :root{
-      --bg:#0b0b0f;
+      --bg:#07070b;
       --panel:#11121a;
       --panel2:#0f1017;
       --text:#f3f3f3;
@@ -31,11 +31,15 @@
     html,body{ height:100%; }
     body{
       margin:0;
-      /* ✅ cool trendy black + yellow gradient */
+
+      /* ✅ upgraded trendy black/yellow background (no images needed) */
       background:
-        radial-gradient(1200px 700px at 15% 0%, rgba(255,212,0,0.18), transparent 55%),
-        radial-gradient(900px 600px at 100% 10%, rgba(255,212,0,0.10), transparent 55%),
-        linear-gradient(135deg, #06060a 0%, #0b0b12 40%, #0c0b10 65%, #08080d 100%);
+        radial-gradient(1100px 650px at 18% 0%, rgba(255,212,0,0.22), transparent 58%),
+        radial-gradient(900px 550px at 110% 8%, rgba(255,212,0,0.14), transparent 60%),
+        radial-gradient(700px 520px at 60% 110%, rgba(255,212,0,0.08), transparent 62%),
+        linear-gradient(135deg, rgba(255,212,0,0.10) 0%, rgba(0,0,0,0) 38%),
+        linear-gradient(180deg, #050509 0%, #07070d 45%, #0a0a12 100%);
+
       color:var(--text);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
@@ -58,8 +62,8 @@
       border: 1px solid rgba(255,255,255,0.10);
       background:
         linear-gradient(180deg, rgba(255,255,255,0.05), transparent 70%),
-        radial-gradient(700px 200px at 10% 0%, rgba(255,212,0,0.22), transparent 60%),
-        rgba(17,18,26,0.75);
+        radial-gradient(780px 220px at 10% 0%, rgba(255,212,0,0.26), transparent 60%),
+        rgba(17,18,26,0.78);
       box-shadow: var(--shadow);
       backdrop-filter: blur(8px);
     }
@@ -368,15 +372,6 @@
         </button>
       </div>
 
-      <!-- ✅ PITCH TYPE -->
-      <div class="group">
-        <label for="pitchType">Pitch</label>
-        <select id="pitchType" title="Choose pitch type">
-          <option value="full" selected>Full pitch</option>
-          <option value="half">Half pitch</option>
-        </select>
-      </div>
-
       <!-- ✅ SEQUENCES (FRAMES) CONTROLS -->
       <div class="group" id="sequenceGroup" style="gap:8px;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -454,7 +449,6 @@
   });
 
   let pitchGroup = null;
-  let pitchType = document.getElementById('pitchType').value; // full | half
 
   let mode = 'add';
   let addType = document.getElementById('addType').value;
@@ -597,7 +591,7 @@
 
     // ✅ make pitch taller on smaller screens
     const isMobile = w < 520;
-    const ratio = isMobile ? 0.78 : 0.58; // bigger on mobile
+    const ratio = isMobile ? 0.78 : 0.58;
     const h = Math.floor(w * ratio);
 
     canvas.setWidth(w);
@@ -612,8 +606,10 @@
     pitchGroup = null;
   }
 
-  // ------------- Pitch helpers -------------
-  function makePitchBase(){
+  // ✅ FULL PITCH: goals LEFT + RIGHT, halfway line VERTICAL
+  function makeFullPitch() {
+    clearPitchOnly();
+
     const W = canvas.getWidth();
     const H = canvas.getHeight();
 
@@ -635,6 +631,7 @@
       evented: false
     });
 
+    // vertical stripes
     const stripes = [];
     const stripeCount = 14;
     const stripeW = field.width / stripeCount;
@@ -672,14 +669,6 @@
       ...opts
     });
 
-    return { W, H, margin, field, stripes, lineColor, L, R, C };
-  }
-
-  // ✅ FULL PITCH: goals LEFT + RIGHT, halfway line VERTICAL
-  function makeFullPitch() {
-    clearPitchOnly();
-
-    const { field, stripes, lineColor, L, R, C } = makePitchBase();
     const objs = [...stripes, field];
 
     // Boundary
@@ -744,70 +733,11 @@
     canvas.requestRenderAll();
   }
 
-  // ✅ HALF PITCH: one goal (right side) + "halfway" line on left
-  function makeHalfPitch(){
-    clearPitchOnly();
-
-    const { field, stripes, lineColor, L, R } = makePitchBase();
-    const objs = [...stripes, field];
-
-    // Boundary
-    objs.push(R({ left: field.left, top: field.top, width: field.width, height: field.height }));
-
-    // Halfway line at left boundary (vertical)
-    objs.push(L(field.left, field.top, field.left, field.top + field.height));
-
-    // Semi centre circle (arc) on halfway line
-    const arcR = Math.min(field.width, field.height) * 0.12;
-    const cx = field.left;
-    const cy = field.top + field.height/2;
-    // arc bulges into the pitch (to the right)
-    const arcPath = new fabric.Path(
-      `M ${cx} ${cy - arcR} A ${arcR} ${arcR} 0 0 1 ${cx} ${cy + arcR}`,
-      { fill:'', stroke: lineColor, strokeWidth: 2, selectable:false, evented:false }
-    );
-    objs.push(arcPath);
-
-    // Boxes + goal on right only
-    const boxH = field.height * 0.55;
-    const boxW = field.width * 0.18;
-    const sixH = field.height * 0.30;
-    const sixW = field.width * 0.07;
-    const goalH = field.height * 0.18;
-    const goalW = field.width * 0.02;
-    const midY = field.top + field.height/2;
-
-    objs.push(R({ left: field.left + field.width - boxW, top: midY - boxH/2, width: boxW, height: boxH }));
-    objs.push(R({ left: field.left + field.width - sixW, top: midY - sixH/2, width: sixW, height: sixH }));
-    objs.push(R({ left: field.left + field.width, top: midY - goalH/2, width: goalW, height: goalH }));
-    objs.push(new fabric.Circle({
-      left: field.left + field.width - boxW*0.62 - 2,
-      top: midY - 2,
-      radius: 2,
-      fill: lineColor,
-      stroke: lineColor,
-      selectable:false, evented:false
-    }));
-
-    pitchGroup = new fabric.Group(objs, { selectable:false, evented:false });
-    pitchGroup.isPitch = true;
-    pitchGroup.excludeFromExport = false;
-
-    canvas.add(pitchGroup);
-    canvas.sendToBack(pitchGroup);
-    canvas.requestRenderAll();
-  }
-
-  function makePitchByType(){
-    if (pitchType === 'half') makeHalfPitch();
-    else makeFullPitch();
-  }
-
   function rebuildPitchPreserveObjects() {
     const keep = canvas.getObjects().filter(o => !o.isPitch);
     clearPitchOnly();
     fitCanvasToFrame();
-    makePitchByType();
+    makeFullPitch();
     keep.forEach(o => canvas.add(o));
     canvas.requestRenderAll();
   }
@@ -1074,15 +1004,6 @@
     if (canvas.freeDrawingBrush) canvas.freeDrawingBrush.color = strokeColor;
   });
 
-  // ✅ pitch type selector
-  document.getElementById('pitchType').addEventListener('change', (e) => {
-    pitchType = e.target.value;
-    // preserve objects and rebuild pitch
-    pushHistory();
-    rebuildPitchPreserveObjects();
-    pushHistory();
-  });
-
   // --- Lines ---
   let isDrawingLine = false;
   let lineStart = null;
@@ -1180,10 +1101,8 @@
     const active = canvas.getActiveObject();
     if (!active) return false;
 
-    // prevent deleting pitch
     if (active.isPitch) return false;
 
-    // if active selection includes pitch, block
     if (active.type === 'activeSelection'){
       const objs = active.getObjects();
       if (objs.some(o => o && o.isPitch)) return false;
@@ -1220,7 +1139,6 @@
 
   deleteSelectedBtn.addEventListener('click', deleteSelection);
 
-  // keyboard delete/backspace (ignore when typing in inputs)
   window.addEventListener('keydown', (e) => {
     const tag = (document.activeElement && document.activeElement.tagName) ? document.activeElement.tagName.toLowerCase() : '';
     const isTyping = tag === 'input' || tag === 'textarea';
@@ -1509,7 +1427,6 @@
     const lines = [];
     lines.push('TactiGrid Drill Designer - Notes Export');
     lines.push(`Created: ${stamp}`);
-    lines.push(`Pitch: ${pitchType === 'half' ? 'Half pitch' : 'Full pitch'}`);
     lines.push(`Frames: ${frames.length}`);
     lines.push(`ms/frame: ${msPerFrame}`);
     lines.push('');
@@ -1700,7 +1617,7 @@
   // --- Init + resize ---
   function init(){
     fitCanvasToFrame();
-    makePitchByType();
+    makeFullPitch();
     resetHistory();
     setMode('add');
 
