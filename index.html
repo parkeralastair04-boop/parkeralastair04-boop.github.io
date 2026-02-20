@@ -11,7 +11,7 @@
   <!-- jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-  <!-- ✅ FFmpeg.wasm (for MP4 conversion) -->
+  <!-- FFmpeg.wasm (for MP4 conversion) -->
   <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/ffmpeg.min.js"></script>
 
   <style>
@@ -31,9 +31,11 @@
     html,body{ height:100%; }
     body{
       margin:0;
-      background: radial-gradient(1200px 700px at 20% 0%, rgba(255,212,0,0.10), transparent 55%),
-                  radial-gradient(1000px 600px at 100% 0%, rgba(255,212,0,0.06), transparent 55%),
-                  var(--bg);
+      /* ✅ cool trendy black + yellow gradient */
+      background:
+        radial-gradient(1200px 700px at 15% 0%, rgba(255,212,0,0.18), transparent 55%),
+        radial-gradient(900px 600px at 100% 10%, rgba(255,212,0,0.10), transparent 55%),
+        linear-gradient(135deg, #06060a 0%, #0b0b12 40%, #0c0b10 65%, #08080d 100%);
       color:var(--text);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
@@ -44,28 +46,39 @@
       padding: 18px 14px 40px;
     }
 
+    /* ✅ banner header */
     header{
       display:flex;
       gap:12px;
       align-items:center;
       justify-content:space-between;
       margin-bottom: 14px;
+      padding: 14px 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), transparent 70%),
+        radial-gradient(700px 200px at 10% 0%, rgba(255,212,0,0.22), transparent 60%),
+        rgba(17,18,26,0.75);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
     }
 
     .brand{
       display:flex;
       align-items:center;
-      gap:12px;
+      gap:14px;
       user-select:none;
       min-width: 0;
     }
 
+    /* ✅ bigger logo in banner */
     .brandLogo{
-      height: 42px;
+      height: 62px;
       width: auto;
       display:block;
-      border-radius: 8px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      border-radius: 10px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.35);
     }
 
     .brandText{
@@ -75,10 +88,10 @@
     }
 
     .brand h1{
-      font-size: 18px;
+      font-size: 19px;
       margin:0;
       letter-spacing: 0.2px;
-      font-weight: 800;
+      font-weight: 900;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
@@ -86,16 +99,35 @@
     .brand .sub{
       margin:0;
       font-size: 12px;
-      color: var(--muted);
-      margin-top:2px;
+      color: rgba(255,255,255,0.78);
+      margin-top:4px;
     }
 
     .topControls{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      align-items:flex-end;
+      min-width: 200px;
+    }
+
+    .topControls .row{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
       justify-content:flex-end;
     }
+
+    /* ✅ subtitle so users understand zoom buttons */
+    .zoomSub{
+      font-size: 12px;
+      color: rgba(255,255,255,0.72);
+      opacity: 0.95;
+      line-height: 1.2;
+      text-align:right;
+      user-select:none;
+    }
+    .zoomSub b{ color: var(--yellow); }
 
     .panel{
       background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 70%),
@@ -131,7 +163,7 @@
       white-space:nowrap;
     }
 
-    select, input[type="color"], input[type="text"], textarea{
+    select, input[type="color"], input[type="text"], input[type="number"], textarea{
       background: var(--panel2);
       color: var(--text);
       border: 1px solid rgba(255,255,255,0.10);
@@ -161,7 +193,7 @@
       padding: 10px 12px;
       border-radius: 12px;
       cursor:pointer;
-      font-weight: 700;
+      font-weight: 800;
       display:inline-flex;
       gap:10px;
       align-items:center;
@@ -194,9 +226,16 @@
       outline-offset: 1px;
     }
 
-    .ico{
-      width: 18px; height: 18px; display:inline-block;
+    .btn.danger{
+      background: rgba(255,70,70,0.10);
+      border-color: rgba(255,70,70,0.30);
     }
+    .btn.danger:hover{
+      background: rgba(255,70,70,0.14);
+      border-color: rgba(255,70,70,0.45);
+    }
+
+    .ico{ width: 18px; height: 18px; display:inline-block; }
 
     .stack{
       display:flex;
@@ -244,6 +283,12 @@
       flex-wrap:wrap;
       margin-top: 10px;
     }
+
+    @media (max-width: 520px){
+      .brandLogo{ height: 54px; }
+      .topControls{ min-width: 0; }
+      input[type="text"]{ min-width: 150px; }
+    }
   </style>
 </head>
 
@@ -254,14 +299,19 @@
         <img class="brandLogo" src="tactigrid-logo.png" alt="TactiGrid logo" />
         <div class="brandText">
           <h1>TactiGrid Drill Designer</h1>
-          <p class="sub">Design drills, add notes, export PNG/PDF</p>
+          <p class="sub">Design drills, add notes, export PNG/PDF & sequences</p>
         </div>
       </div>
 
       <div class="topControls">
-        <button class="btn icon" id="zoomOutBtn" title="Zoom out"><span class="ico">➖</span></button>
-        <button class="btn icon" id="zoomResetBtn" title="Reset view"><span class="ico">⤾</span></button>
-        <button class="btn icon" id="zoomInBtn" title="Zoom in"><span class="ico">➕</span></button>
+        <div class="row">
+          <button class="btn icon" id="zoomOutBtn" title="Zoom out"><span class="ico">➖</span></button>
+          <button class="btn icon" id="zoomResetBtn" title="Reset view"><span class="ico">⤾</span></button>
+          <button class="btn icon" id="zoomInBtn" title="Zoom in"><span class="ico">➕</span></button>
+        </div>
+        <div class="zoomSub">
+          <b>Zoom</b> controls: Out • Reset • In
+        </div>
       </div>
     </header>
 
@@ -311,6 +361,20 @@
         <button class="btn" id="undoBtn" title="Undo">Undo</button>
         <button class="btn" id="redoBtn" title="Redo">Redo</button>
         <button class="btn" id="clearBtn" title="Clear all">Clear</button>
+
+        <!-- ✅ delete selected appears/enables when an object is selected -->
+        <button class="btn danger" id="deleteSelectedBtn" title="Delete selected object" style="display:none;">
+          🗑 Delete selected
+        </button>
+      </div>
+
+      <!-- ✅ PITCH TYPE -->
+      <div class="group">
+        <label for="pitchType">Pitch</label>
+        <select id="pitchType" title="Choose pitch type">
+          <option value="full" selected>Full pitch</option>
+          <option value="half">Half pitch</option>
+        </select>
       </div>
 
       <!-- ✅ SEQUENCES (FRAMES) CONTROLS -->
@@ -361,7 +425,6 @@
             Export PDF
           </button>
 
-          <!-- ✅ VIDEO EXPORT BUTTONS -->
           <button class="btn primary" id="exportWebmBtn" title="Export the sequence as WebM video">
             <span class="ico" aria-hidden="true">🎥</span>
             Export Video (WebM)
@@ -391,6 +454,7 @@
   });
 
   let pitchGroup = null;
+  let pitchType = document.getElementById('pitchType').value; // full | half
 
   let mode = 'add';
   let addType = document.getElementById('addType').value;
@@ -401,12 +465,12 @@
   let redoStack = [];
   const MAX_STACK = 40;
 
-  // -------------------- ✅ SEQUENCES (FRAMES) STATE --------------------
-  let frames = [null];     // array of Fabric canvas JSON snapshots
+  // -------------------- SEQUENCES (FRAMES) STATE --------------------
+  let frames = [null];
   let currentFrame = 0;
 
   let isPlaying = false;
-  let playToken = 0;       // cancels async playback loops
+  let playToken = 0;
 
   function updateFrameLabel(){
     const el = document.getElementById('frameLabel');
@@ -431,7 +495,6 @@
     undoStack.push(json);
     if (undoStack.length > MAX_STACK) undoStack.shift();
 
-    // ✅ keep current frame snapshot up-to-date so switching frames doesn't lose work
     if (frames && frames.length) frames[currentFrame] = json;
   }
 
@@ -444,10 +507,7 @@
           o.excludeFromExport = false;
         }
       });
-
-      // ✅ re-link pitchGroup after any load (important for resize/pitch rebuild)
       relinkPitchGroup();
-
       canvas.requestRenderAll();
     });
   }
@@ -475,22 +535,20 @@
     pushHistory();
   }
 
-  // -------------------- ✅ SEQUENCES (FRAMES) FUNCTIONS --------------------
+  // -------------------- SEQUENCES (FRAMES) FUNCTIONS --------------------
   async function loadFrame(index){
     if (index < 0 || index >= frames.length) return;
 
-    // save current before switching
     captureCurrentFrame();
-
     currentFrame = index;
 
-    // if frame is empty, base it on current canvas snapshot
     const json = frames[currentFrame] || canvas.toJSON(['isPitch','isPlayer','playerText']);
     frames[currentFrame] = json;
 
     await loadFromAsync(json);
     resetHistory();
     updateFrameLabel();
+    refreshDeleteButton();
   }
 
   async function addFrameDuplicateCurrent(){
@@ -500,7 +558,7 @@
   }
 
   async function deleteCurrentFrame(){
-    if (frames.length <= 1) return; // always keep at least 1 frame
+    if (frames.length <= 1) return;
     frames.splice(currentFrame, 1);
     currentFrame = Math.min(currentFrame, frames.length - 1);
     await loadFrame(currentFrame);
@@ -514,7 +572,6 @@
     document.getElementById('playFramesBtn').textContent = '⏹ Stop';
 
     const myToken = ++playToken;
-
     const msInput = document.getElementById('frameMs');
     const msPerFrame = msInput ? Math.max(100, Number(msInput.value) || 800) : 800;
 
@@ -533,11 +590,16 @@
     document.getElementById('playFramesBtn').textContent = '▶ Play';
   }
 
-  // -------------------- CANVAS SIZE (landscape) --------------------
+  // -------------------- CANVAS SIZE (bigger on mobile) --------------------
   function fitCanvasToFrame() {
     const r = frameEl.getBoundingClientRect();
     const w = Math.max(320, Math.floor(r.width));
-    const h = Math.floor(w * 0.58);
+
+    // ✅ make pitch taller on smaller screens
+    const isMobile = w < 520;
+    const ratio = isMobile ? 0.78 : 0.58; // bigger on mobile
+    const h = Math.floor(w * ratio);
+
     canvas.setWidth(w);
     canvas.setHeight(h);
     canvas.calcOffset();
@@ -550,13 +612,13 @@
     pitchGroup = null;
   }
 
-  // ✅ PITCH: Landscape with goals LEFT + RIGHT, halfway line VERTICAL
-  function makeFullPitch() {
-    clearPitchOnly();
-
+  // ------------- Pitch helpers -------------
+  function makePitchBase(){
     const W = canvas.getWidth();
     const H = canvas.getHeight();
-    const margin = Math.max(18, Math.floor(Math.min(W,H) * 0.04));
+
+    // ✅ slightly smaller margins on mobile to maximize field size
+    const margin = Math.max(12, Math.floor(Math.min(W,H) * 0.032));
 
     const pitchFill = '#1d6a3a';
     const pitchStripe = '#1a6135';
@@ -610,11 +672,23 @@
       ...opts
     });
 
+    return { W, H, margin, field, stripes, lineColor, L, R, C };
+  }
+
+  // ✅ FULL PITCH: goals LEFT + RIGHT, halfway line VERTICAL
+  function makeFullPitch() {
+    clearPitchOnly();
+
+    const { field, stripes, lineColor, L, R, C } = makePitchBase();
     const objs = [...stripes, field];
 
+    // Boundary
     objs.push(R({ left: field.left, top: field.top, width: field.width, height: field.height }));
+
+    // Halfway line (vertical)
     objs.push(L(field.left + field.width/2, field.top, field.left + field.width/2, field.top + field.height));
 
+    // Centre circle + spot
     const ccR = Math.min(field.width, field.height) * 0.12;
     objs.push(C({ left: field.left + field.width/2 - ccR, top: field.top + field.height/2 - ccR, radius: ccR }));
     objs.push(new fabric.Circle({
@@ -626,6 +700,7 @@
       selectable:false, evented:false
     }));
 
+    // Boxes + goals LEFT / RIGHT
     const boxH = field.height * 0.55;
     const boxW = field.width * 0.18;
     const sixH = field.height * 0.30;
@@ -634,6 +709,7 @@
     const goalW = field.width * 0.02;
     const midY = field.top + field.height/2;
 
+    // Left end
     objs.push(R({ left: field.left, top: midY - boxH/2, width: boxW, height: boxH }));
     objs.push(R({ left: field.left, top: midY - sixH/2, width: sixW, height: sixH }));
     objs.push(R({ left: field.left - goalW, top: midY - goalH/2, width: goalW, height: goalH }));
@@ -645,6 +721,61 @@
       stroke: lineColor,
       selectable:false, evented:false
     }));
+
+    // Right end
+    objs.push(R({ left: field.left + field.width - boxW, top: midY - boxH/2, width: boxW, height: boxH }));
+    objs.push(R({ left: field.left + field.width - sixW, top: midY - sixH/2, width: sixW, height: sixH }));
+    objs.push(R({ left: field.left + field.width, top: midY - goalH/2, width: goalW, height: goalH }));
+    objs.push(new fabric.Circle({
+      left: field.left + field.width - boxW*0.62 - 2,
+      top: midY - 2,
+      radius: 2,
+      fill: lineColor,
+      stroke: lineColor,
+      selectable:false, evented:false
+    }));
+
+    pitchGroup = new fabric.Group(objs, { selectable:false, evented:false });
+    pitchGroup.isPitch = true;
+    pitchGroup.excludeFromExport = false;
+
+    canvas.add(pitchGroup);
+    canvas.sendToBack(pitchGroup);
+    canvas.requestRenderAll();
+  }
+
+  // ✅ HALF PITCH: one goal (right side) + "halfway" line on left
+  function makeHalfPitch(){
+    clearPitchOnly();
+
+    const { field, stripes, lineColor, L, R } = makePitchBase();
+    const objs = [...stripes, field];
+
+    // Boundary
+    objs.push(R({ left: field.left, top: field.top, width: field.width, height: field.height }));
+
+    // Halfway line at left boundary (vertical)
+    objs.push(L(field.left, field.top, field.left, field.top + field.height));
+
+    // Semi centre circle (arc) on halfway line
+    const arcR = Math.min(field.width, field.height) * 0.12;
+    const cx = field.left;
+    const cy = field.top + field.height/2;
+    // arc bulges into the pitch (to the right)
+    const arcPath = new fabric.Path(
+      `M ${cx} ${cy - arcR} A ${arcR} ${arcR} 0 0 1 ${cx} ${cy + arcR}`,
+      { fill:'', stroke: lineColor, strokeWidth: 2, selectable:false, evented:false }
+    );
+    objs.push(arcPath);
+
+    // Boxes + goal on right only
+    const boxH = field.height * 0.55;
+    const boxW = field.width * 0.18;
+    const sixH = field.height * 0.30;
+    const sixW = field.width * 0.07;
+    const goalH = field.height * 0.18;
+    const goalW = field.width * 0.02;
+    const midY = field.top + field.height/2;
 
     objs.push(R({ left: field.left + field.width - boxW, top: midY - boxH/2, width: boxW, height: boxH }));
     objs.push(R({ left: field.left + field.width - sixW, top: midY - sixH/2, width: sixW, height: sixH }));
@@ -667,11 +798,16 @@
     canvas.requestRenderAll();
   }
 
+  function makePitchByType(){
+    if (pitchType === 'half') makeHalfPitch();
+    else makeFullPitch();
+  }
+
   function rebuildPitchPreserveObjects() {
     const keep = canvas.getObjects().filter(o => !o.isPitch);
     clearPitchOnly();
     fitCanvasToFrame();
-    makeFullPitch();
+    makePitchByType();
     keep.forEach(o => canvas.add(o));
     canvas.requestRenderAll();
   }
@@ -702,7 +838,7 @@
     return luminance > 0.6 ? '#111' : '#fff';
   }
 
-  // --- Objects (now use colour picker) ---
+  // --- Objects ---
   function makePlayer(x,y, fillHex, labelText){
     const circle = new fabric.Circle({
       left: x-16, top: y-16, radius: 16,
@@ -906,6 +1042,7 @@
       addControls.style.opacity = '1';
     }
     refreshSelectability();
+    refreshDeleteButton();
   }
 
   addModeBtn.addEventListener('click', () => { setMode('add'); setLineDrawing(false); });
@@ -935,6 +1072,15 @@
   colorEl.addEventListener('input', (e) => {
     strokeColor = e.target.value;
     if (canvas.freeDrawingBrush) canvas.freeDrawingBrush.color = strokeColor;
+  });
+
+  // ✅ pitch type selector
+  document.getElementById('pitchType').addEventListener('change', (e) => {
+    pitchType = e.target.value;
+    // preserve objects and rebuild pitch
+    pushHistory();
+    rebuildPitchPreserveObjects();
+    pushHistory();
   });
 
   // --- Lines ---
@@ -1026,7 +1172,70 @@
     canvas.requestRenderAll();
   }
 
+  // --- Delete selected object (button + keyboard) ---
+  const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+
+  function canDeleteSelection(){
+    if (mode !== 'edit') return false;
+    const active = canvas.getActiveObject();
+    if (!active) return false;
+
+    // prevent deleting pitch
+    if (active.isPitch) return false;
+
+    // if active selection includes pitch, block
+    if (active.type === 'activeSelection'){
+      const objs = active.getObjects();
+      if (objs.some(o => o && o.isPitch)) return false;
+    }
+    return true;
+  }
+
+  function refreshDeleteButton(){
+    const show = canDeleteSelection();
+    deleteSelectedBtn.style.display = show ? 'inline-flex' : 'none';
+  }
+
+  function deleteSelection(){
+    if (!canDeleteSelection()) return;
+
+    pushHistory();
+
+    const active = canvas.getActiveObject();
+    if (!active) return;
+
+    if (active.type === 'activeSelection'){
+      const objs = active.getObjects();
+      canvas.discardActiveObject();
+      objs.forEach(o => { if (o && !o.isPitch) canvas.remove(o); });
+    } else {
+      if (!active.isPitch) canvas.remove(active);
+      canvas.discardActiveObject();
+    }
+
+    canvas.requestRenderAll();
+    pushHistory();
+    refreshDeleteButton();
+  }
+
+  deleteSelectedBtn.addEventListener('click', deleteSelection);
+
+  // keyboard delete/backspace (ignore when typing in inputs)
+  window.addEventListener('keydown', (e) => {
+    const tag = (document.activeElement && document.activeElement.tagName) ? document.activeElement.tagName.toLowerCase() : '';
+    const isTyping = tag === 'input' || tag === 'textarea';
+    if (isTyping) return;
+
+    if (e.key === 'Delete' || e.key === 'Backspace'){
+      deleteSelection();
+    }
+  });
+
   // --- Canvas events ---
+  canvas.on('selection:created', refreshDeleteButton);
+  canvas.on('selection:updated', refreshDeleteButton);
+  canvas.on('selection:cleared', refreshDeleteButton);
+
   canvas.on('mouse:down', (opt) => {
     if (mode !== 'add') return;
 
@@ -1102,7 +1311,6 @@
       if (next === null) return;
 
       t.playerText = next;
-
       const txtObj = t._objects && t._objects[1];
       if (txtObj && (txtObj.type === 'text' || txtObj.type === 'i-text')){
         txtObj.text = next;
@@ -1119,6 +1327,7 @@
     redoStack.push(current);
     const prev = undoStack[undoStack.length - 1];
     loadFrom(prev);
+    refreshDeleteButton();
   });
 
   document.getElementById('redoBtn').addEventListener('click', () => {
@@ -1126,6 +1335,7 @@
     const next = redoStack.pop();
     undoStack.push(next);
     loadFrom(next);
+    refreshDeleteButton();
   });
 
   document.getElementById('clearBtn').addEventListener('click', () => {
@@ -1133,9 +1343,11 @@
     canvas.getObjects().slice().forEach(o => { if (!o.isPitch) canvas.remove(o); });
     canvas.discardActiveObject();
     canvas.requestRenderAll();
+    pushHistory();
+    refreshDeleteButton();
   });
 
-  // -------------------- ✅ SEQUENCES UI LISTENERS --------------------
+  // -------------------- SEQUENCES UI LISTENERS --------------------
   document.getElementById('prevFrameBtn').addEventListener('click', async () => {
     await loadFrame(Math.max(0, currentFrame - 1));
   });
@@ -1190,6 +1402,7 @@
     e.stopPropagation();
   });
 
+  // Touch pinch + two-finger pan
   let lastTouch = null;
   let lastDist = null;
 
@@ -1245,7 +1458,7 @@
     lastDist = null;
   });
 
-  // --- Export (branding black) ---
+  // --- Export helpers (branding black) ---
   function withBrandingTemp(fn){
     const W = canvas.getWidth();
     const H = canvas.getHeight();
@@ -1257,7 +1470,7 @@
       originY: 'bottom',
       fill: '#000000',
       fontSize: 18,
-      fontWeight: '800',
+      fontWeight: '900',
       selectable:false,
       evented:false
     });
@@ -1273,6 +1486,40 @@
     }
   }
 
+  function downloadTextFile(filename, text){
+    const blob = new Blob([text], { type:'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function buildNotesExportText(){
+    const notesText = document.getElementById('notes').value || '';
+    const msInput = document.getElementById('frameMs');
+    const msPerFrame = msInput ? Math.max(100, Number(msInput.value) || 800) : 800;
+
+    const now = new Date();
+    const stamp = now.toLocaleString();
+
+    const lines = [];
+    lines.push('TactiGrid Drill Designer - Notes Export');
+    lines.push(`Created: ${stamp}`);
+    lines.push(`Pitch: ${pitchType === 'half' ? 'Half pitch' : 'Full pitch'}`);
+    lines.push(`Frames: ${frames.length}`);
+    lines.push(`ms/frame: ${msPerFrame}`);
+    lines.push('');
+    lines.push('Notes:');
+    lines.push(notesText.trim() ? notesText.trim() : '—');
+
+    return lines.join('\n');
+  }
+
+  // --- PNG ---
   document.getElementById('exportPngBtn').addEventListener('click', () => {
     withBrandingTemp(() => {
       const dataUrl = canvas.toDataURL({ format:'png', multiplier: 2, enableRetinaScaling: true });
@@ -1283,6 +1530,7 @@
     });
   });
 
+  // --- PDF ---
   document.getElementById('exportPdfBtn').addEventListener('click', () => {
     const notesText = document.getElementById('notes').value || '';
 
@@ -1329,7 +1577,7 @@
     });
   });
 
-  // -------------------- ✅ VIDEO EXPORT (WEBM + MP4) --------------------
+  // -------------------- VIDEO EXPORT (WEBM + MP4) --------------------
   function getBestRecorderMimeType(){
     const candidates = [
       'video/webm;codecs=vp9',
@@ -1376,6 +1624,9 @@
 
     await loadFrame(originalFrame);
 
+    // ✅ export notes alongside the video
+    downloadTextFile('tactigrid-notes.txt', buildNotesExportText());
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1389,7 +1640,6 @@
   }
 
   async function convertWebMToMP4(webmBlob){
-    // UMD build exposes FFmpeg on window
     if (!window.FFmpeg || !window.FFmpeg.createFFmpeg || !window.FFmpeg.fetchFile){
       throw new Error('FFmpeg not loaded');
     }
@@ -1400,7 +1650,6 @@
     await ffmpeg.load();
     ffmpeg.FS('writeFile', 'input.webm', await fetchFile(webmBlob));
 
-    // Convert to MP4 (H.264)
     await ffmpeg.run(
       '-i', 'input.webm',
       '-c:v', 'libx264',
@@ -1451,14 +1700,14 @@
   // --- Init + resize ---
   function init(){
     fitCanvasToFrame();
-    makeFullPitch();
+    makePitchByType();
     resetHistory();
     setMode('add');
 
-    // ✅ init sequences with current canvas as Frame 1
     frames = [undoStack[undoStack.length - 1]];
     currentFrame = 0;
     updateFrameLabel();
+    refreshDeleteButton();
 
     let resizeTimer = null;
     window.addEventListener('resize', () => {
