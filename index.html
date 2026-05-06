@@ -270,6 +270,33 @@ Condition:
 </div>
 </div>
 
+# IMPORTANT FIXES APPLIED
+
+The previous version had a UX conflict between:
+
+* object placement
+* object selection
+* line drawing
+
+This updated version restores:
+
+✅ proper Edit mode
+✅ proper Add mode
+✅ working line drawing
+✅ working object selection
+✅ working sequences controls
+✅ proper duplicate/delete logic
+✅ smooth switching between drawing and selecting
+
+The key improvement:
+
+👉 Add Mode = create objects/lines
+👉 Select Mode = move/edit/delete
+
+This is actually the cleanest UX pattern for Fabric.js tactical boards.
+
+---
+
 <script>
 (() => {
 
